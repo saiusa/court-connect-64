@@ -246,6 +246,33 @@ export default function OwnerDashboard() {
           <StatCard icon={LayoutDashboard} label="Est. occupancy" value={`${stats.occupancy}%`} />
         </div>
 
+        {/* CSV Export */}
+        <div className="bg-card-gradient border border-border rounded-2xl p-5 shadow-card mb-10">
+          <div className="flex items-center gap-3 mb-4">
+            <Download className="size-5 text-accent" />
+            <h3 className="font-display text-2xl tracking-wider">Export analytics</h3>
+          </div>
+          <div className="grid sm:grid-cols-[1fr_1fr_auto_auto] gap-3 items-end">
+            <div>
+              <Label>From</Label>
+              <Input type="date" value={exportFrom} onChange={(e) => setExportFrom(e.target.value)} />
+            </div>
+            <div>
+              <Label>To</Label>
+              <Input type="date" value={exportTo} onChange={(e) => setExportTo(e.target.value)} />
+            </div>
+            <Button variant="outline" onClick={exportBookingsCSV}>
+              <Download className="size-4" /> Bookings CSV
+            </Button>
+            <Button onClick={exportRevenueCSV}>
+              <Download className="size-4" /> Revenue CSV
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Exports include all of your facilities. Revenue rows aggregate paid &amp; completed bookings per day.
+          </p>
+        </div>
+
         {/* Charts */}
         <div className="grid lg:grid-cols-3 gap-4 mb-10">
           <div className="lg:col-span-2 bg-card-gradient border border-border rounded-2xl p-5 shadow-card">
