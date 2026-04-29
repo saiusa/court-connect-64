@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { formatPHP } from "@/lib/format";
-import { LayoutDashboard, Plus, Pencil, TrendingUp, CalendarCheck2, Wallet, Download } from "lucide-react";
+import { LayoutDashboard, Plus, Pencil, TrendingUp, CalendarCheck2, Wallet, Download, StickyNote, Save, Loader2 } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { toCSV, downloadCSV } from "@/lib/csv";
 
@@ -26,7 +26,7 @@ interface Facility {
 
 interface BookingRow {
   id: string; booking_date: string; start_hour: number; end_hour: number;
-  total_price: number; status: string; facility_id: string;
+  total_price: number; status: string; facility_id: string; owner_notes: string | null;
 }
 
 const SPORTS = ["basketball", "badminton", "soccer", "tennis", "gym", "volleyball"];
@@ -67,7 +67,7 @@ export default function OwnerDashboard() {
       const ids = list.map((f) => f.id);
       const { data: bks } = await supabase
         .from("bookings")
-        .select("id,booking_date,start_hour,end_hour,total_price,status,facility_id")
+        .select("id,booking_date,start_hour,end_hour,total_price,status,facility_id,owner_notes")
         .in("facility_id", ids)
         .order("booking_date", { ascending: false });
       setBookings((bks as BookingRow[]) || []);
