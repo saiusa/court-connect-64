@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { formatPHP } from "@/lib/format";
-import { LayoutDashboard, Plus, Pencil, TrendingUp, CalendarCheck2, Wallet, Download } from "lucide-react";
+import { LayoutDashboard, Plus, Pencil, TrendingUp, CalendarCheck2, Wallet, Download, StickyNote, Save, Loader2 } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { toCSV, downloadCSV } from "@/lib/csv";
 
@@ -26,7 +26,7 @@ interface Facility {
 
 interface BookingRow {
   id: string; booking_date: string; start_hour: number; end_hour: number;
-  total_price: number; status: string; facility_id: string;
+  total_price: number; status: string; facility_id: string; owner_notes: string | null;
 }
 
 const SPORTS = ["basketball", "badminton", "soccer", "tennis", "gym", "volleyball"];
@@ -67,7 +67,7 @@ export default function OwnerDashboard() {
       const ids = list.map((f) => f.id);
       const { data: bks } = await supabase
         .from("bookings")
-        .select("id,booking_date,start_hour,end_hour,total_price,status,facility_id")
+        .select("id,booking_date,start_hour,end_hour,total_price,status,facility_id,owner_notes")
         .in("facility_id", ids)
         .order("booking_date", { ascending: false });
       setBookings((bks as BookingRow[]) || []);
@@ -352,7 +352,32 @@ export default function OwnerDashboard() {
           </div>
         )}
 
-        {/* Edit dialog */}
+        {/* Bookings with inline notes editor */}
+        {bookings.length > 0 && (
+          <div className="mt-12">
+            <h2 className="font-display text-3xl tracking-wider mb-1">Recent bookings</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Add or update private notes that the customer will see on their booking and printed receipt.
+            </p>
+            <div className="grid gap-3">
+              {bookings.slice(0, 25).map((b) => {
+                const f = facilities.find((x) => x.id === b.facility_id);
+                return (
+                  <BookingNotesRow
+                    key={b.id}
+                    booking={b}
+                    facilityName={f?.name || "—"}
+                    sportType={f?.sport_type || ""}
+                    onSaved={(notes) =>
+                      setBookings((bs) => bs.map((x) => (x.id === b.id ? { ...x, owner_notes: notes } : x)))
+                    }
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <Dialog open={!!editing} onOpenChange={(v) => !v && setEditing(null)}>
           <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -416,6 +441,76 @@ function StatCard({ icon: Icon, label, value }: { icon: any; label: string; valu
       <Icon className="size-5 text-accent mb-2" />
       <div className="font-display text-3xl tracking-wider text-gradient">{value}</div>
       <div className="text-xs uppercase tracking-widest text-muted-foreground mt-1">{label}</div>
+    </div>
+  );
+}
+
+function BookingNotesRow({
+  booking,
+  facilityName,
+  sportType,
+  onSaved,
+}: {
+  booking: BookingRow;
+  facilityName: string;
+  sportType: string;
+  onSaved: (notes: string | null) => void;
+}) {
+  const [notes, setNotes] = useState(booking.owner_notes || "");
+  const [saving, setSaving] = useState(false);
+  const dirty = (booking.owner_notes || "") !== notes;
+
+  const save = async () => {
+    setSaving(true);
+    const value = notes.trim() ? notes.trim() : null;
+    const { error } = await supabase.from("bookings").update({ owner_notes: value }).eq("id", booking.id);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    onSaved(value);
+    toast.success("Notes saved");
+  };
+
+  const statusColor =
+    booking.status === "paid" ? "text-accent"
+    : booking.status === "cancelled" ? "text-destructive"
+    : booking.status === "completed" ? "text-primary"
+    : "text-muted-foreground";
+
+  return (
+    <div className="bg-card-gradient border border-border rounded-2xl p-4 shadow-card grid md:grid-cols-[260px_1fr_auto] gap-4 items-start">
+      <div>
+        <span className="text-[10px] uppercase tracking-widest text-accent font-bold">{sportType}</span>
+        <div className="font-display text-xl tracking-wider leading-tight">{facilityName}</div>
+        <div className="text-xs text-muted-foreground mt-1">
+          {format(parseISO(booking.booking_date), "PPP")} · {booking.start_hour}:00–{booking.end_hour}:00
+        </div>
+        <div className="flex items-center gap-2 mt-1.5 text-xs">
+          <span className="font-mono opacity-60">#{booking.id.slice(0, 8).toUpperCase()}</span>
+          <span className={`uppercase font-bold tracking-wider ${statusColor}`}>{booking.status}</span>
+        </div>
+      </div>
+      <div>
+        <Label className="flex items-center gap-1.5 text-xs mb-1.5">
+          <StickyNote className="size-3.5 text-accent" /> Owner notes
+        </Label>
+        <Textarea
+          rows={2}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="e.g. Arrive 10 min early, ask for Mark at the gate."
+          className="text-sm"
+        />
+      </div>
+      <Button
+        size="sm"
+        onClick={save}
+        disabled={!dirty || saving}
+        variant={dirty ? "default" : "outline"}
+        className="md:mt-7"
+      >
+        {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+        {saving ? "Saving" : dirty ? "Save" : "Saved"}
+      </Button>
     </div>
   );
 }

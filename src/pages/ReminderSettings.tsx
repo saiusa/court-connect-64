@@ -133,8 +133,8 @@ export default function ReminderSettings() {
           Choose when we should remind you about upcoming bookings and team series. You can enable as many lead times as you'd like.
         </p>
 
-        {/* Master switch + delivery channel */}
-        <section className="bg-card-gradient border border-border rounded-2xl p-5 shadow-card mb-6">
+        {/* Master switch + delivery channel — always visible (sticky) */}
+        <section className="sticky top-4 z-10 bg-card-gradient/95 backdrop-blur border border-border rounded-2xl p-5 shadow-card mb-6">
           <div className="flex items-start justify-between gap-4 pb-5 border-b border-border">
             <div className="flex gap-3">
               {mainEnabled ? <Bell className="size-5 text-accent mt-1" /> : <BellOff className="size-5 text-muted-foreground mt-1" />}
@@ -146,7 +146,7 @@ export default function ReminderSettings() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Switch checked={mainEnabled} onCheckedChange={updateMaster} />
+              <Switch checked={mainEnabled} onCheckedChange={updateMaster} aria-label="Master reminders toggle" />
               <span className="text-xs text-muted-foreground w-12">{mainEnabled ? "On" : "Off"}</span>
             </div>
           </div>
@@ -164,9 +164,14 @@ export default function ReminderSettings() {
                 </SelectItem>
               </SelectContent>
             </Select>
-            {channel === "email" && (
+            {channel === "email" && mainEnabled && (
               <p className="text-xs text-muted-foreground mt-2">
                 Email delivery isn't connected yet — your preference is saved and will start sending once the sender domain is configured.
+              </p>
+            )}
+            {!mainEnabled && (
+              <p className="text-xs text-muted-foreground mt-2">
+                All reminders are paused. Turn the master switch on to resume delivery and re-enable the controls below.
               </p>
             )}
           </div>

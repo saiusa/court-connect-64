@@ -12,7 +12,7 @@ import { formatPHP } from "@/lib/format";
 import { BookingTimeline, type BookingStatus } from "@/components/BookingTimeline";
 import { PaymentDialog } from "@/components/PaymentDialog";
 import { toast } from "sonner";
-import { Calendar, Clock, MapPin, X, CreditCard, Users, Receipt, Search, StickyNote } from "lucide-react";
+import { Calendar, Clock, MapPin, X, CreditCard, Users, Receipt, Search, StickyNote, XCircle } from "lucide-react";
 import { downloadReceipt } from "@/lib/receipt";
 
 interface Booking {
@@ -53,6 +53,7 @@ export default function MyBookings() {
   const [payTarget, setPayTarget] = useState<{ ids: string[]; amount: number } | null>(null);
   const [filter, setFilter] = useState<FilterStatus>("all");
   const [search, setSearch] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
   const [customerName, setCustomerName] = useState<string>("");
 
   useEffect(() => { document.title = "My Bookings · Courtside"; }, []);
@@ -134,6 +135,28 @@ export default function MyBookings() {
     return c;
   }, [bookings]);
 
+  // Autocomplete suggestions: facility names, dates, and booking IDs matching current input
+  const suggestions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    const facilities = new Set<string>();
+    const dates = new Set<string>();
+    const ids: string[] = [];
+    bookings.forEach((b) => {
+      const name = b.facilities?.name;
+      if (name && name.toLowerCase().includes(q)) facilities.add(name);
+      const pretty = format(parseISO(b.booking_date), "PPP");
+      if (pretty.toLowerCase().includes(q) || b.booking_date.includes(q)) dates.add(pretty);
+      const shortId = b.id.slice(0, 8).toUpperCase();
+      if (shortId.toLowerCase().includes(q.replace(/^#/, ""))) ids.push(`#${shortId}`);
+    });
+    return [
+      ...Array.from(facilities).slice(0, 4).map((v) => ({ kind: "Facility", value: v })),
+      ...Array.from(dates).slice(0, 4).map((v) => ({ kind: "Date", value: v })),
+      ...ids.slice(0, 4).map((v) => ({ kind: "Booking ID", value: v })),
+    ].slice(0, 8);
+  }, [search, bookings]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -149,9 +172,37 @@ export default function MyBookings() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
                 placeholder="Search by date, facility, or booking ID…"
-                className="pl-9"
+                className="pl-9 pr-9"
+                aria-label="Search bookings"
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Clear search"
+                >
+                  <XCircle className="size-4" />
+                </button>
+              )}
+              {searchFocused && suggestions.length > 0 && (
+                <div className="absolute z-20 left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden">
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={`${s.kind}-${s.value}-${i}`}
+                      type="button"
+                      onMouseDown={(e) => { e.preventDefault(); setSearch(s.value.replace(/^#/, "")); }}
+                      className="w-full text-left px-3 py-2 hover:bg-muted/60 flex items-center justify-between gap-3 text-sm"
+                    >
+                      <span className="truncate">{s.value}</span>
+                      <span className="text-[10px] uppercase tracking-widest text-accent font-bold flex-shrink-0">{s.kind}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               {FILTERS.map((f) => (
