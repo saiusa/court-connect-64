@@ -172,9 +172,37 @@ export default function MyBookings() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
                 placeholder="Search by date, facility, or booking ID…"
-                className="pl-9"
+                className="pl-9 pr-9"
+                aria-label="Search bookings"
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Clear search"
+                >
+                  <XCircle className="size-4" />
+                </button>
+              )}
+              {searchFocused && suggestions.length > 0 && (
+                <div className="absolute z-20 left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden">
+                  {suggestions.map((s, i) => (
+                    <button
+                      key={`${s.kind}-${s.value}-${i}`}
+                      type="button"
+                      onMouseDown={(e) => { e.preventDefault(); setSearch(s.value.replace(/^#/, "")); }}
+                      className="w-full text-left px-3 py-2 hover:bg-muted/60 flex items-center justify-between gap-3 text-sm"
+                    >
+                      <span className="truncate">{s.value}</span>
+                      <span className="text-[10px] uppercase tracking-widest text-accent font-bold flex-shrink-0">{s.kind}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               {FILTERS.map((f) => (
