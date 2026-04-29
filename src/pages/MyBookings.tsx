@@ -199,6 +199,11 @@ function BookingRow({
               <CreditCard className="size-4" /> Pay now
             </Button>
           )}
+          {(b.status === "paid" || b.status === "completed") && (
+            <Button variant="outline" size="sm" onClick={() => downloadReceipt(b)}>
+              <Receipt className="size-4" /> Receipt
+            </Button>
+          )}
           {b.status !== "cancelled" && !isPast && (
             <Button variant="outline" size="sm" onClick={() => onCancel(b.id)}>
               <X className="size-4" /> Cancel
