@@ -197,6 +197,9 @@ export default function OwnerDashboard() {
     downloadCSV(`revenue_${exportFrom}_to_${exportTo}.csv`, toCSV(rows));
     toast.success("Revenue analytics exported");
   };
+
+  if (loading || authLoading || rolesLoading) {
+    return (
       <div className="min-h-screen flex flex-col">
         <Navbar /><main className="flex-1 container py-20 text-center text-muted-foreground">Loading dashboard…</main><Footer />
       </div>
