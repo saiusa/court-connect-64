@@ -1,10 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { Trophy, LogOut, CalendarCheck } from "lucide-react";
+import { useRoles } from "@/hooks/useRole";
+import { Trophy, LogOut, CalendarCheck, LayoutDashboard } from "lucide-react";
 
 export function Navbar() {
   const { user, signOut } = useAuth();
+  const { isOwner } = useRoles();
   const navigate = useNavigate();
 
   return (
@@ -21,11 +23,18 @@ export function Navbar() {
           <Link to="/" className="hover:text-primary transition-colors">Home</Link>
           <Link to="/facilities" className="hover:text-primary transition-colors">Facilities</Link>
           {user && <Link to="/my-bookings" className="hover:text-primary transition-colors">My Bookings</Link>}
+          {isOwner && <Link to="/owner" className="hover:text-primary transition-colors">Dashboard</Link>}
         </nav>
 
         <div className="flex items-center gap-3">
           {user ? (
             <>
+              {isOwner && (
+                <Button variant="ghost" size="sm" onClick={() => navigate("/owner")}>
+                  <LayoutDashboard className="size-4" />
+                  <span className="hidden sm:inline">Dashboard</span>
+                </Button>
+              )}
               <Button variant="ghost" size="sm" onClick={() => navigate("/my-bookings")}>
                 <CalendarCheck className="size-4" />
                 <span className="hidden sm:inline">Bookings</span>

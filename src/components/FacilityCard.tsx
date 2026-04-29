@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { MapPin, Clock } from "lucide-react";
 import { resolveFacilityImage } from "@/lib/facility-images";
+import { formatPHP } from "@/lib/format";
 
 interface Props {
   id: string;
@@ -43,7 +44,7 @@ export function FacilityCard(p: Props) {
             <span className="truncate max-w-[160px]">{p.location}</span>
           </div>
           <div className="flex items-center gap-1 font-bold text-accent">
-            <span className="text-lg">${p.hourly_price}</span>
+            <span className="text-lg">{formatPHP(p.hourly_price)}</span>
             <span className="text-xs text-muted-foreground">/hr</span>
           </div>
         </div>

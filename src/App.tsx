@@ -9,6 +9,7 @@ import Auth from "./pages/Auth.tsx";
 import Facilities from "./pages/Facilities.tsx";
 import FacilityDetail from "./pages/FacilityDetail.tsx";
 import MyBookings from "./pages/MyBookings.tsx";
+import OwnerDashboard from "./pages/OwnerDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/facilities" element={<Facilities />} />
             <Route path="/facilities/:id" element={<FacilityDetail />} />
             <Route path="/my-bookings" element={<MyBookings />} />
+            <Route path="/owner" element={<OwnerDashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
