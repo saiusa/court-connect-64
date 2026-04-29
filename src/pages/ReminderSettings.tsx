@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Bell, Plus, Trash2, Mail } from "lucide-react";
+import { Bell, Plus, Trash2, Mail, BellOff, Smartphone } from "lucide-react";
 
 interface Reminder {
   id: string;
@@ -18,6 +18,8 @@ interface Reminder {
   label: string;
   enabled: boolean;
 }
+
+type Channel = "in_app" | "email";
 
 const PRESETS = [
   { label: "15 minutes", minutes: 15 },
@@ -44,6 +46,8 @@ export default function ReminderSettings() {
   const [loading, setLoading] = useState(true);
   const [newPreset, setNewPreset] = useState("60");
   const [newLabel, setNewLabel] = useState("");
+  const [channel, setChannel] = useState<Channel>("in_app");
+  const [mainEnabled, setMainEnabled] = useState(true);
 
   useEffect(() => { document.title = "Reminders · Courtside"; }, []);
 
@@ -56,13 +60,32 @@ export default function ReminderSettings() {
 
   const refresh = async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from("reminder_preferences")
-      .select("id,minutes_before,label,enabled")
-      .eq("user_id", user.id)
-      .order("minutes_before");
-    setReminders((data as Reminder[]) || []);
+    const [{ data: rems }, { data: prof }] = await Promise.all([
+      supabase.from("reminder_preferences").select("id,minutes_before,label,enabled").eq("user_id", user.id).order("minutes_before"),
+      supabase.from("profiles").select("reminder_channel,reminders_enabled").eq("id", user.id).maybeSingle(),
+    ]);
+    setReminders((rems as Reminder[]) || []);
+    if (prof) {
+      setChannel(((prof as any).reminder_channel as Channel) || "in_app");
+      setMainEnabled((prof as any).reminders_enabled ?? true);
+    }
     setLoading(false);
+  };
+
+  const updateChannel = async (next: Channel) => {
+    if (!user) return;
+    setChannel(next);
+    const { error } = await supabase.from("profiles").update({ reminder_channel: next }).eq("id", user.id);
+    if (error) return toast.error(error.message);
+    toast.success(`Delivery set to ${next === "in_app" ? "in-app" : "email"}`);
+  };
+
+  const updateMaster = async (next: boolean) => {
+    if (!user) return;
+    setMainEnabled(next);
+    const { error } = await supabase.from("profiles").update({ reminders_enabled: next }).eq("id", user.id);
+    if (error) return toast.error(error.message);
+    toast.success(next ? "All reminders enabled" : "All reminders paused");
   };
 
   const addReminder = async () => {
@@ -110,14 +133,46 @@ export default function ReminderSettings() {
           Choose when we should remind you about upcoming bookings and team series. You can enable as many lead times as you'd like.
         </p>
 
-        <div className="bg-accent/10 border border-accent/30 rounded-xl p-4 mb-8 flex gap-3 items-start">
-          <Mail className="size-5 text-accent flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-muted-foreground">
-            Email delivery isn't connected yet — your saved preferences will start firing as soon as the sender domain is set up.
-          </p>
-        </div>
-
+        {/* Master switch + delivery channel */}
         <section className="bg-card-gradient border border-border rounded-2xl p-5 shadow-card mb-6">
+          <div className="flex items-start justify-between gap-4 pb-5 border-b border-border">
+            <div className="flex gap-3">
+              {mainEnabled ? <Bell className="size-5 text-accent mt-1" /> : <BellOff className="size-5 text-muted-foreground mt-1" />}
+              <div>
+                <h2 className="font-display text-2xl tracking-wider">All reminders</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Master switch — pauses every reminder below without losing your settings.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={mainEnabled} onCheckedChange={updateMaster} />
+              <span className="text-xs text-muted-foreground w-12">{mainEnabled ? "On" : "Off"}</span>
+            </div>
+          </div>
+
+          <div className="pt-5">
+            <Label className="mb-2 block">Delivery method</Label>
+            <Select value={channel} onValueChange={(v) => updateChannel(v as Channel)} disabled={!mainEnabled}>
+              <SelectTrigger className="max-w-md"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="in_app">
+                  <div className="flex items-center gap-2"><Smartphone className="size-4" /> In-app notifications</div>
+                </SelectItem>
+                <SelectItem value="email">
+                  <div className="flex items-center gap-2"><Mail className="size-4" /> Email (coming soon)</div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {channel === "email" && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Email delivery isn't connected yet — your preference is saved and will start sending once the sender domain is configured.
+              </p>
+            )}
+          </div>
+        </section>
+
+        <section className={`bg-card-gradient border border-border rounded-2xl p-5 shadow-card mb-6 ${!mainEnabled ? "opacity-50 pointer-events-none" : ""}`}>
           <h2 className="font-display text-2xl tracking-wider mb-4">Add a reminder</h2>
           <div className="grid sm:grid-cols-[200px_1fr_auto] gap-3 items-end">
             <div>
@@ -148,7 +203,7 @@ export default function ReminderSettings() {
               No reminders yet. Add one above to start receiving alerts before each booking.
             </div>
           ) : (
-            <div className="grid gap-3">
+            <div className={`grid gap-3 ${!mainEnabled ? "opacity-50" : ""}`}>
               {reminders.map((r) => (
                 <div key={r.id} className="bg-card-gradient border border-border rounded-2xl p-4 shadow-card flex items-center justify-between gap-3">
                   <div className="flex-1">
@@ -159,7 +214,7 @@ export default function ReminderSettings() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
-                      <Switch checked={r.enabled} onCheckedChange={(v) => toggle(r.id, v)} />
+                      <Switch checked={r.enabled} onCheckedChange={(v) => toggle(r.id, v)} disabled={!mainEnabled} />
                       <span className="text-xs text-muted-foreground w-12">{r.enabled ? "On" : "Off"}</span>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => remove(r.id)}>
