@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_series: {
+        Row: {
+          created_at: string
+          end_hour: number
+          facility_id: string
+          id: string
+          start_date: string
+          start_hour: number
+          team_name: string
+          user_id: string
+          weekday: number
+          weeks: number
+        }
+        Insert: {
+          created_at?: string
+          end_hour: number
+          facility_id: string
+          id?: string
+          start_date: string
+          start_hour: number
+          team_name: string
+          user_id: string
+          weekday: number
+          weeks: number
+        }
+        Update: {
+          created_at?: string
+          end_hour?: number
+          facility_id?: string
+          id?: string
+          start_date?: string
+          start_hour?: number
+          team_name?: string
+          user_id?: string
+          weekday?: number
+          weeks?: number
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           booking_date: string
@@ -21,8 +60,11 @@ export type Database = {
           end_hour: number
           facility_id: string
           id: string
+          paid_at: string | null
+          payment_ref: string | null
+          series_id: string | null
           start_hour: number
-          status: string
+          status: Database["public"]["Enums"]["booking_status"]
           total_price: number
           user_id: string
         }
@@ -32,8 +74,11 @@ export type Database = {
           end_hour: number
           facility_id: string
           id?: string
+          paid_at?: string | null
+          payment_ref?: string | null
+          series_id?: string | null
           start_hour: number
-          status?: string
+          status?: Database["public"]["Enums"]["booking_status"]
           total_price?: number
           user_id: string
         }
@@ -43,8 +88,11 @@ export type Database = {
           end_hour?: number
           facility_id?: string
           id?: string
+          paid_at?: string | null
+          payment_ref?: string | null
+          series_id?: string | null
           start_hour?: number
-          status?: string
+          status?: Database["public"]["Enums"]["booking_status"]
           total_price?: number
           user_id?: string
         }
@@ -163,6 +211,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "owner" | "user"
+      booking_status: "pending" | "paid" | "cancelled" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -291,6 +340,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "owner", "user"],
+      booking_status: ["pending", "paid", "cancelled", "completed"],
     },
   },
 } as const
