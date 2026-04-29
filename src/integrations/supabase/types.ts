@@ -60,6 +60,7 @@ export type Database = {
           end_hour: number
           facility_id: string
           id: string
+          owner_notes: string | null
           paid_at: string | null
           payment_ref: string | null
           series_id: string | null
@@ -74,6 +75,7 @@ export type Database = {
           end_hour: number
           facility_id: string
           id?: string
+          owner_notes?: string | null
           paid_at?: string | null
           payment_ref?: string | null
           series_id?: string | null
@@ -88,6 +90,7 @@ export type Database = {
           end_hour?: number
           facility_id?: string
           id?: string
+          owner_notes?: string | null
           paid_at?: string | null
           payment_ref?: string | null
           series_id?: string | null
@@ -157,6 +160,8 @@ export type Database = {
           display_name: string | null
           id: string
           phone: string | null
+          reminder_channel: string
+          reminders_enabled: boolean
           updated_at: string
         }
         Insert: {
@@ -164,6 +169,8 @@ export type Database = {
           display_name?: string | null
           id: string
           phone?: string | null
+          reminder_channel?: string
+          reminders_enabled?: boolean
           updated_at?: string
         }
         Update: {
@@ -171,6 +178,8 @@ export type Database = {
           display_name?: string | null
           id?: string
           phone?: string | null
+          reminder_channel?: string
+          reminders_enabled?: boolean
           updated_at?: string
         }
         Relationships: []
