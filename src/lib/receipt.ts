@@ -10,6 +10,7 @@ interface ReceiptBooking {
   status: string;
   payment_ref?: string | null;
   paid_at?: string | null;
+  owner_notes?: string | null;
   facilities: { name?: string; sport_type?: string; location?: string } | null;
 }
 
