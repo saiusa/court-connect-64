@@ -352,7 +352,32 @@ export default function OwnerDashboard() {
           </div>
         )}
 
-        {/* Edit dialog */}
+        {/* Bookings with inline notes editor */}
+        {bookings.length > 0 && (
+          <div className="mt-12">
+            <h2 className="font-display text-3xl tracking-wider mb-1">Recent bookings</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Add or update private notes that the customer will see on their booking and printed receipt.
+            </p>
+            <div className="grid gap-3">
+              {bookings.slice(0, 25).map((b) => {
+                const f = facilities.find((x) => x.id === b.facility_id);
+                return (
+                  <BookingNotesRow
+                    key={b.id}
+                    booking={b}
+                    facilityName={f?.name || "—"}
+                    sportType={f?.sport_type || ""}
+                    onSaved={(notes) =>
+                      setBookings((bs) => bs.map((x) => (x.id === b.id ? { ...x, owner_notes: notes } : x)))
+                    }
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <Dialog open={!!editing} onOpenChange={(v) => !v && setEditing(null)}>
           <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
