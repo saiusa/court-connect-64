@@ -12,7 +12,7 @@ import { formatPHP } from "@/lib/format";
 import { BookingTimeline, type BookingStatus } from "@/components/BookingTimeline";
 import { PaymentDialog } from "@/components/PaymentDialog";
 import { toast } from "sonner";
-import { Calendar, Clock, MapPin, X, CreditCard, Users, Receipt, Search, StickyNote } from "lucide-react";
+import { Calendar, Clock, MapPin, X, CreditCard, Users, Receipt, Search, StickyNote, XCircle } from "lucide-react";
 import { downloadReceipt } from "@/lib/receipt";
 
 interface Booking {
@@ -53,6 +53,7 @@ export default function MyBookings() {
   const [payTarget, setPayTarget] = useState<{ ids: string[]; amount: number } | null>(null);
   const [filter, setFilter] = useState<FilterStatus>("all");
   const [search, setSearch] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
   const [customerName, setCustomerName] = useState<string>("");
 
   useEffect(() => { document.title = "My Bookings · Courtside"; }, []);
