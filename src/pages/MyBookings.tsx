@@ -6,12 +6,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { resolveFacilityImage } from "@/lib/facility-images";
 import { formatPHP } from "@/lib/format";
 import { BookingTimeline, type BookingStatus } from "@/components/BookingTimeline";
 import { PaymentDialog } from "@/components/PaymentDialog";
 import { toast } from "sonner";
-import { Calendar, Clock, MapPin, X, CreditCard, Users, Receipt } from "lucide-react";
+import { Calendar, Clock, MapPin, X, CreditCard, Users, Receipt, Search, StickyNote } from "lucide-react";
 import { downloadReceipt } from "@/lib/receipt";
 
 interface Booking {
@@ -24,6 +25,7 @@ interface Booking {
   series_id: string | null;
   payment_ref: string | null;
   paid_at: string | null;
+  owner_notes: string | null;
   facilities: {
     id: string;
     name: string;
@@ -33,12 +35,25 @@ interface Booking {
   } | null;
 }
 
+type FilterStatus = "all" | "pending" | "paid" | "completed" | "cancelled";
+
+const FILTERS: { value: FilterStatus; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "pending", label: "Pending" },
+  { value: "paid", label: "Paid" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
 export default function MyBookings() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [payTarget, setPayTarget] = useState<{ ids: string[]; amount: number } | null>(null);
+  const [filter, setFilter] = useState<FilterStatus>("all");
+  const [search, setSearch] = useState("");
+  const [customerName, setCustomerName] = useState<string>("");
 
   useEffect(() => { document.title = "My Bookings · Courtside"; }, []);
 
@@ -46,7 +61,7 @@ export default function MyBookings() {
     if (!user) return;
     supabase
       .from("bookings")
-      .select("id,booking_date,start_hour,end_hour,total_price,status,series_id,payment_ref,paid_at,facilities(id,name,sport_type,location,image_url)")
+      .select("id,booking_date,start_hour,end_hour,total_price,status,series_id,payment_ref,paid_at,owner_notes,facilities(id,name,sport_type,location,image_url)")
       .eq("user_id", user.id)
       .order("booking_date", { ascending: false })
       .then(({ data }) => {
@@ -59,6 +74,8 @@ export default function MyBookings() {
     if (authLoading) return;
     if (!user) { navigate("/auth"); return; }
     refresh();
+    supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle()
+      .then(({ data }) => setCustomerName(data?.display_name || user.email || ""));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, navigate]);
 
@@ -69,11 +86,34 @@ export default function MyBookings() {
     toast.success("Booking cancelled");
   };
 
-  // Group by series
+  // Apply filter + search, then group by series
+  const filteredBookings = useMemo(() => {
+    const today = new Date(new Date().setHours(0, 0, 0, 0));
+    const q = search.trim().toLowerCase();
+    return bookings.filter((b) => {
+      // Display status (paid + past = completed)
+      const isPast = parseISO(b.booking_date) < today;
+      const displayStatus: BookingStatus = b.status === "paid" && isPast ? "completed" : b.status;
+      if (filter !== "all" && displayStatus !== filter) return false;
+      if (!q) return true;
+      const haystack = [
+        b.id,
+        b.id.slice(0, 8),
+        b.facilities?.name,
+        b.facilities?.sport_type,
+        b.facilities?.location,
+        b.booking_date,
+        format(parseISO(b.booking_date), "PPP").toLowerCase(),
+        format(parseISO(b.booking_date), "MMM d yyyy").toLowerCase(),
+      ].filter(Boolean).join(" ").toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [bookings, filter, search]);
+
   const grouped = useMemo(() => {
     const series = new Map<string, Booking[]>();
     const single: Booking[] = [];
-    bookings.forEach((b) => {
+    filteredBookings.forEach((b) => {
       if (b.series_id) {
         const arr = series.get(b.series_id) || [];
         arr.push(b);
@@ -81,6 +121,17 @@ export default function MyBookings() {
       } else single.push(b);
     });
     return { series: Array.from(series.entries()), single };
+  }, [filteredBookings]);
+
+  const counts = useMemo(() => {
+    const today = new Date(new Date().setHours(0, 0, 0, 0));
+    const c: Record<FilterStatus, number> = { all: bookings.length, pending: 0, paid: 0, completed: 0, cancelled: 0 };
+    bookings.forEach((b) => {
+      const isPast = parseISO(b.booking_date) < today;
+      const s: BookingStatus = b.status === "paid" && isPast ? "completed" : b.status;
+      c[s as FilterStatus] = (c[s as FilterStatus] || 0) + 1;
+    });
+    return c;
   }, [bookings]);
 
   return (
@@ -88,7 +139,38 @@ export default function MyBookings() {
       <Navbar />
       <main className="flex-1 container py-12">
         <h1 className="font-display text-5xl md:text-6xl tracking-wider mb-3">My Bookings</h1>
-        <p className="text-muted-foreground text-lg mb-10">Manage your reservations across Butuan City venues.</p>
+        <p className="text-muted-foreground text-lg mb-8">Manage your reservations across Butuan City venues.</p>
+
+        {/* Filters + search */}
+        {bookings.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3 mb-8">
+            <div className="relative flex-1 min-w-[240px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by date, facility, or booking ID…"
+                className="pl-9"
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {FILTERS.map((f) => (
+                <Button
+                  key={f.value}
+                  variant={filter === f.value ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setFilter(f.value)}
+                  className="font-bold tracking-wider"
+                >
+                  {f.label}
+                  <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${filter === f.value ? "bg-primary-foreground/20" : "bg-muted"}`}>
+                    {counts[f.value] || 0}
+                  </span>
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="text-center py-20 text-muted-foreground">Loading…</div>
@@ -96,6 +178,11 @@ export default function MyBookings() {
           <div className="text-center py-20 bg-card-gradient border border-border rounded-2xl">
             <p className="text-muted-foreground mb-4">No bookings yet.</p>
             <Button onClick={() => navigate("/facilities")}>Browse facilities</Button>
+          </div>
+        ) : filteredBookings.length === 0 ? (
+          <div className="text-center py-16 bg-card-gradient border border-border rounded-2xl">
+            <p className="text-muted-foreground mb-4">No bookings match your filters.</p>
+            <Button variant="outline" onClick={() => { setFilter("all"); setSearch(""); }}>Clear filters</Button>
           </div>
         ) : (
           <div className="space-y-8">
@@ -122,7 +209,7 @@ export default function MyBookings() {
                     )}
                   </div>
                   <div className="grid gap-3">
-                    {items.map((b) => <BookingRow key={b.id} b={b} onCancel={cancelBooking} onPay={(id, amt) => setPayTarget({ ids: [id], amount: amt })} />)}
+                    {items.map((b) => <BookingRow key={b.id} b={b} customerName={customerName} onCancel={cancelBooking} onPay={(id, amt) => setPayTarget({ ids: [id], amount: amt })} />)}
                   </div>
                 </section>
               );
@@ -132,7 +219,7 @@ export default function MyBookings() {
             {grouped.single.length > 0 && (
               <div className="grid gap-3">
                 {grouped.single.map((b) => (
-                  <BookingRow key={b.id} b={b} onCancel={cancelBooking} onPay={(id, amt) => setPayTarget({ ids: [id], amount: amt })} />
+                  <BookingRow key={b.id} b={b} customerName={customerName} onCancel={cancelBooking} onPay={(id, amt) => setPayTarget({ ids: [id], amount: amt })} />
                 ))}
               </div>
             )}
@@ -157,15 +244,16 @@ export default function MyBookings() {
 
 function BookingRow({
   b,
+  customerName,
   onCancel,
   onPay,
 }: {
   b: Booking;
+  customerName: string;
   onCancel: (id: string) => void;
   onPay: (id: string, amount: number) => void;
 }) {
   const isPast = parseISO(b.booking_date) < new Date(new Date().setHours(0, 0, 0, 0));
-  // Auto-derive 'completed' visual state for past paid bookings
   const displayStatus: BookingStatus =
     b.status === "paid" && isPast ? "completed" : b.status;
 
@@ -185,7 +273,14 @@ function BookingRow({
             <span className="flex items-center gap-1.5"><MapPin className="size-3" />{b.facilities?.location}</span>
             <span className="flex items-center gap-1.5"><Calendar className="size-3" />{format(parseISO(b.booking_date), "PPP")}</span>
             <span className="flex items-center gap-1.5"><Clock className="size-3" />{b.start_hour}:00 – {b.end_hour}:00</span>
+            <span className="font-mono opacity-60">#{b.id.slice(0, 8).toUpperCase()}</span>
           </div>
+          {b.owner_notes && (
+            <div className="mt-3 flex gap-2 items-start text-xs bg-accent/10 border border-accent/30 rounded-lg p-2.5">
+              <StickyNote className="size-3.5 text-accent flex-shrink-0 mt-0.5" />
+              <span className="text-muted-foreground whitespace-pre-wrap">{b.owner_notes}</span>
+            </div>
+          )}
         </div>
         <BookingTimeline status={displayStatus} />
       </div>
@@ -200,7 +295,7 @@ function BookingRow({
             </Button>
           )}
           {(b.status === "paid" || b.status === "completed") && (
-            <Button variant="outline" size="sm" onClick={() => downloadReceipt(b)}>
+            <Button variant="outline" size="sm" onClick={() => downloadReceipt(b, customerName)}>
               <Receipt className="size-4" /> Receipt
             </Button>
           )}
