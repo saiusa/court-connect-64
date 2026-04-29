@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoles } from "@/hooks/useRole";
-import { Trophy, LogOut, CalendarCheck, LayoutDashboard } from "lucide-react";
+import { Trophy, LogOut, CalendarCheck, LayoutDashboard, Bell } from "lucide-react";
 
 export function Navbar() {
   const { user, signOut } = useAuth();
@@ -23,6 +23,7 @@ export function Navbar() {
           <Link to="/" className="hover:text-primary transition-colors">Home</Link>
           <Link to="/facilities" className="hover:text-primary transition-colors">Facilities</Link>
           {user && <Link to="/my-bookings" className="hover:text-primary transition-colors">My Bookings</Link>}
+          {user && <Link to="/reminders" className="hover:text-primary transition-colors">Reminders</Link>}
           {isOwner && <Link to="/owner" className="hover:text-primary transition-colors">Dashboard</Link>}
         </nav>
 
@@ -38,6 +39,10 @@ export function Navbar() {
               <Button variant="ghost" size="sm" onClick={() => navigate("/my-bookings")}>
                 <CalendarCheck className="size-4" />
                 <span className="hidden sm:inline">Bookings</span>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/reminders")}>
+                <Bell className="size-4" />
+                <span className="hidden sm:inline">Reminders</span>
               </Button>
               <Button variant="outline" size="sm" onClick={async () => { await signOut(); navigate("/"); }}>
                 <LogOut className="size-4" />

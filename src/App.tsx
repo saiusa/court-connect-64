@@ -10,6 +10,7 @@ import Facilities from "./pages/Facilities.tsx";
 import FacilityDetail from "./pages/FacilityDetail.tsx";
 import MyBookings from "./pages/MyBookings.tsx";
 import OwnerDashboard from "./pages/OwnerDashboard.tsx";
+import ReminderSettings from "./pages/ReminderSettings.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/facilities/:id" element={<FacilityDetail />} />
             <Route path="/my-bookings" element={<MyBookings />} />
             <Route path="/owner" element={<OwnerDashboard />} />
+            <Route path="/reminders" element={<ReminderSettings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
