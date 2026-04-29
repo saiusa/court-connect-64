@@ -14,8 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { formatPHP } from "@/lib/format";
-import { LayoutDashboard, Plus, Pencil, TrendingUp, CalendarCheck2, Wallet } from "lucide-react";
+import { LayoutDashboard, Plus, Pencil, TrendingUp, CalendarCheck2, Wallet, Download } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { toCSV, downloadCSV } from "@/lib/csv";
 
 interface Facility {
   id: string; name: string; sport_type: string; location: string;
@@ -44,6 +45,8 @@ export default function OwnerDashboard() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<Facility> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [exportFrom, setExportFrom] = useState(format(subDays(new Date(), 30), "yyyy-MM-dd"));
+  const [exportTo, setExportTo] = useState(format(new Date(), "yyyy-MM-dd"));
 
   useEffect(() => { document.title = "Owner Dashboard · Courtside"; }, []);
 
@@ -138,6 +141,63 @@ export default function OwnerDashboard() {
     refresh();
   };
 
+  const exportBookingsCSV = () => {
+    const from = parseISO(exportFrom);
+    const to = parseISO(exportTo);
+    if (to < from) { toast.error("End date must be after start date"); return; }
+    const filtered = bookings.filter((b) => {
+      const d = parseISO(b.booking_date);
+      return d >= from && d <= to;
+    });
+    const rows = filtered.map((b) => {
+      const f = facilities.find((x) => x.id === b.facility_id);
+      return {
+        booking_id: b.id,
+        date: b.booking_date,
+        start_hour: b.start_hour,
+        end_hour: b.end_hour,
+        hours: b.end_hour - b.start_hour,
+        facility: f?.name || "",
+        sport: f?.sport_type || "",
+        status: b.status,
+        amount_php: Number(b.total_price).toFixed(2),
+      };
+    });
+    downloadCSV(`bookings_${exportFrom}_to_${exportTo}.csv`, toCSV(rows));
+    toast.success(`Exported ${rows.length} booking${rows.length === 1 ? "" : "s"}`);
+  };
+
+  const exportRevenueCSV = () => {
+    const from = parseISO(exportFrom);
+    const to = parseISO(exportTo);
+    if (to < from) { toast.error("End date must be after start date"); return; }
+    const dayMap = new Map<string, { bookings: number; paid: number; revenue: number; cancelled: number }>();
+    const days = Math.floor((to.getTime() - from.getTime()) / 86400000) + 1;
+    for (let i = 0; i < days; i++) {
+      const d = format(subDays(to, days - 1 - i), "yyyy-MM-dd");
+      dayMap.set(d, { bookings: 0, paid: 0, revenue: 0, cancelled: 0 });
+    }
+    bookings.forEach((b) => {
+      const entry = dayMap.get(b.booking_date);
+      if (!entry) return;
+      entry.bookings += 1;
+      if (b.status === "cancelled") entry.cancelled += 1;
+      if (b.status === "paid" || b.status === "completed") {
+        entry.paid += 1;
+        entry.revenue += Number(b.total_price);
+      }
+    });
+    const rows = Array.from(dayMap.entries()).map(([date, v]) => ({
+      date,
+      total_bookings: v.bookings,
+      paid_bookings: v.paid,
+      cancelled_bookings: v.cancelled,
+      revenue_php: v.revenue.toFixed(2),
+    }));
+    downloadCSV(`revenue_${exportFrom}_to_${exportTo}.csv`, toCSV(rows));
+    toast.success("Revenue analytics exported");
+  };
+
   if (loading || authLoading || rolesLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -184,6 +244,33 @@ export default function OwnerDashboard() {
           <StatCard icon={CalendarCheck2} label="All-time bookings" value={stats.totalBookings.toString()} />
           <StatCard icon={TrendingUp} label="Upcoming" value={stats.upcoming.toString()} />
           <StatCard icon={LayoutDashboard} label="Est. occupancy" value={`${stats.occupancy}%`} />
+        </div>
+
+        {/* CSV Export */}
+        <div className="bg-card-gradient border border-border rounded-2xl p-5 shadow-card mb-10">
+          <div className="flex items-center gap-3 mb-4">
+            <Download className="size-5 text-accent" />
+            <h3 className="font-display text-2xl tracking-wider">Export analytics</h3>
+          </div>
+          <div className="grid sm:grid-cols-[1fr_1fr_auto_auto] gap-3 items-end">
+            <div>
+              <Label>From</Label>
+              <Input type="date" value={exportFrom} onChange={(e) => setExportFrom(e.target.value)} />
+            </div>
+            <div>
+              <Label>To</Label>
+              <Input type="date" value={exportTo} onChange={(e) => setExportTo(e.target.value)} />
+            </div>
+            <Button variant="outline" onClick={exportBookingsCSV}>
+              <Download className="size-4" /> Bookings CSV
+            </Button>
+            <Button onClick={exportRevenueCSV}>
+              <Download className="size-4" /> Revenue CSV
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Exports include all of your facilities. Revenue rows aggregate paid &amp; completed bookings per day.
+          </p>
         </div>
 
         {/* Charts */}

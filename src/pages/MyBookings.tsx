@@ -11,7 +11,8 @@ import { formatPHP } from "@/lib/format";
 import { BookingTimeline, type BookingStatus } from "@/components/BookingTimeline";
 import { PaymentDialog } from "@/components/PaymentDialog";
 import { toast } from "sonner";
-import { Calendar, Clock, MapPin, X, CreditCard, Users } from "lucide-react";
+import { Calendar, Clock, MapPin, X, CreditCard, Users, Receipt } from "lucide-react";
+import { downloadReceipt } from "@/lib/receipt";
 
 interface Booking {
   id: string;
@@ -21,6 +22,8 @@ interface Booking {
   total_price: number;
   status: BookingStatus;
   series_id: string | null;
+  payment_ref: string | null;
+  paid_at: string | null;
   facilities: {
     id: string;
     name: string;
@@ -43,7 +46,7 @@ export default function MyBookings() {
     if (!user) return;
     supabase
       .from("bookings")
-      .select("id,booking_date,start_hour,end_hour,total_price,status,series_id,facilities(id,name,sport_type,location,image_url)")
+      .select("id,booking_date,start_hour,end_hour,total_price,status,series_id,payment_ref,paid_at,facilities(id,name,sport_type,location,image_url)")
       .eq("user_id", user.id)
       .order("booking_date", { ascending: false })
       .then(({ data }) => {
@@ -194,6 +197,11 @@ function BookingRow({
           {b.status === "pending" && !isPast && (
             <Button size="sm" onClick={() => onPay(b.id, Number(b.total_price))}>
               <CreditCard className="size-4" /> Pay now
+            </Button>
+          )}
+          {(b.status === "paid" || b.status === "completed") && (
+            <Button variant="outline" size="sm" onClick={() => downloadReceipt(b)}>
+              <Receipt className="size-4" /> Receipt
             </Button>
           )}
           {b.status !== "cancelled" && !isPast && (
