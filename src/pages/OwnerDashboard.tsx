@@ -444,3 +444,73 @@ function StatCard({ icon: Icon, label, value }: { icon: any; label: string; valu
     </div>
   );
 }
+
+function BookingNotesRow({
+  booking,
+  facilityName,
+  sportType,
+  onSaved,
+}: {
+  booking: BookingRow;
+  facilityName: string;
+  sportType: string;
+  onSaved: (notes: string | null) => void;
+}) {
+  const [notes, setNotes] = useState(booking.owner_notes || "");
+  const [saving, setSaving] = useState(false);
+  const dirty = (booking.owner_notes || "") !== notes;
+
+  const save = async () => {
+    setSaving(true);
+    const value = notes.trim() ? notes.trim() : null;
+    const { error } = await supabase.from("bookings").update({ owner_notes: value }).eq("id", booking.id);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    onSaved(value);
+    toast.success("Notes saved");
+  };
+
+  const statusColor =
+    booking.status === "paid" ? "text-accent"
+    : booking.status === "cancelled" ? "text-destructive"
+    : booking.status === "completed" ? "text-primary"
+    : "text-muted-foreground";
+
+  return (
+    <div className="bg-card-gradient border border-border rounded-2xl p-4 shadow-card grid md:grid-cols-[260px_1fr_auto] gap-4 items-start">
+      <div>
+        <span className="text-[10px] uppercase tracking-widest text-accent font-bold">{sportType}</span>
+        <div className="font-display text-xl tracking-wider leading-tight">{facilityName}</div>
+        <div className="text-xs text-muted-foreground mt-1">
+          {format(parseISO(booking.booking_date), "PPP")} · {booking.start_hour}:00–{booking.end_hour}:00
+        </div>
+        <div className="flex items-center gap-2 mt-1.5 text-xs">
+          <span className="font-mono opacity-60">#{booking.id.slice(0, 8).toUpperCase()}</span>
+          <span className={`uppercase font-bold tracking-wider ${statusColor}`}>{booking.status}</span>
+        </div>
+      </div>
+      <div>
+        <Label className="flex items-center gap-1.5 text-xs mb-1.5">
+          <StickyNote className="size-3.5 text-accent" /> Owner notes
+        </Label>
+        <Textarea
+          rows={2}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="e.g. Arrive 10 min early, ask for Mark at the gate."
+          className="text-sm"
+        />
+      </div>
+      <Button
+        size="sm"
+        onClick={save}
+        disabled={!dirty || saving}
+        variant={dirty ? "default" : "outline"}
+        className="md:mt-7"
+      >
+        {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+        {saving ? "Saving" : dirty ? "Save" : "Saved"}
+      </Button>
+    </div>
+  );
+}
