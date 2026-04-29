@@ -141,8 +141,62 @@ export default function OwnerDashboard() {
     refresh();
   };
 
-  if (loading || authLoading || rolesLoading) {
-    return (
+  const exportBookingsCSV = () => {
+    const from = parseISO(exportFrom);
+    const to = parseISO(exportTo);
+    if (to < from) { toast.error("End date must be after start date"); return; }
+    const filtered = bookings.filter((b) => {
+      const d = parseISO(b.booking_date);
+      return d >= from && d <= to;
+    });
+    const rows = filtered.map((b) => {
+      const f = facilities.find((x) => x.id === b.facility_id);
+      return {
+        booking_id: b.id,
+        date: b.booking_date,
+        start_hour: b.start_hour,
+        end_hour: b.end_hour,
+        hours: b.end_hour - b.start_hour,
+        facility: f?.name || "",
+        sport: f?.sport_type || "",
+        status: b.status,
+        amount_php: Number(b.total_price).toFixed(2),
+      };
+    });
+    downloadCSV(`bookings_${exportFrom}_to_${exportTo}.csv`, toCSV(rows));
+    toast.success(`Exported ${rows.length} booking${rows.length === 1 ? "" : "s"}`);
+  };
+
+  const exportRevenueCSV = () => {
+    const from = parseISO(exportFrom);
+    const to = parseISO(exportTo);
+    if (to < from) { toast.error("End date must be after start date"); return; }
+    const dayMap = new Map<string, { bookings: number; paid: number; revenue: number; cancelled: number }>();
+    const days = Math.floor((to.getTime() - from.getTime()) / 86400000) + 1;
+    for (let i = 0; i < days; i++) {
+      const d = format(subDays(to, days - 1 - i), "yyyy-MM-dd");
+      dayMap.set(d, { bookings: 0, paid: 0, revenue: 0, cancelled: 0 });
+    }
+    bookings.forEach((b) => {
+      const entry = dayMap.get(b.booking_date);
+      if (!entry) return;
+      entry.bookings += 1;
+      if (b.status === "cancelled") entry.cancelled += 1;
+      if (b.status === "paid" || b.status === "completed") {
+        entry.paid += 1;
+        entry.revenue += Number(b.total_price);
+      }
+    });
+    const rows = Array.from(dayMap.entries()).map(([date, v]) => ({
+      date,
+      total_bookings: v.bookings,
+      paid_bookings: v.paid,
+      cancelled_bookings: v.cancelled,
+      revenue_php: v.revenue.toFixed(2),
+    }));
+    downloadCSV(`revenue_${exportFrom}_to_${exportTo}.csv`, toCSV(rows));
+    toast.success("Revenue analytics exported");
+  };
       <div className="min-h-screen flex flex-col">
         <Navbar /><main className="flex-1 container py-20 text-center text-muted-foreground">Loading dashboard…</main><Footer />
       </div>
