@@ -153,13 +153,13 @@ export default function OwnerDashboard() {
       const f = facilities.find((x) => x.id === b.facility_id);
       return {
         booking_id: b.id,
+        facility_name: f?.name || "",
+        sport_type: f?.sport_type || "",
+        booking_status: b.status,
         date: b.booking_date,
         start_hour: b.start_hour,
         end_hour: b.end_hour,
         hours: b.end_hour - b.start_hour,
-        facility: f?.name || "",
-        sport: f?.sport_type || "",
-        status: b.status,
         amount_php: Number(b.total_price).toFixed(2),
       };
     });
@@ -171,31 +171,33 @@ export default function OwnerDashboard() {
     const from = parseISO(exportFrom);
     const to = parseISO(exportTo);
     if (to < from) { toast.error("End date must be after start date"); return; }
-    const dayMap = new Map<string, { bookings: number; paid: number; revenue: number; cancelled: number }>();
-    const days = Math.floor((to.getTime() - from.getTime()) / 86400000) + 1;
-    for (let i = 0; i < days; i++) {
-      const d = format(subDays(to, days - 1 - i), "yyyy-MM-dd");
-      dayMap.set(d, { bookings: 0, paid: 0, revenue: 0, cancelled: 0 });
-    }
-    bookings.forEach((b) => {
-      const entry = dayMap.get(b.booking_date);
-      if (!entry) return;
-      entry.bookings += 1;
-      if (b.status === "cancelled") entry.cancelled += 1;
-      if (b.status === "paid" || b.status === "completed") {
-        entry.paid += 1;
-        entry.revenue += Number(b.total_price);
-      }
+    const filtered = bookings.filter((b) => {
+      const d = parseISO(b.booking_date);
+      return d >= from && d <= to;
     });
-    const rows = Array.from(dayMap.entries()).map(([date, v]) => ({
-      date,
-      total_bookings: v.bookings,
-      paid_bookings: v.paid,
-      cancelled_bookings: v.cancelled,
-      revenue_php: v.revenue.toFixed(2),
-    }));
+    // Group by date + facility + status (so each row carries facility name, sport, status)
+    const buckets = new Map<string, { date: string; facility_name: string; sport_type: string; booking_status: string; bookings: number; revenue: number }>();
+    filtered.forEach((b) => {
+      const f = facilities.find((x) => x.id === b.facility_id);
+      const key = `${b.booking_date}|${b.facility_id}|${b.status}`;
+      const cur = buckets.get(key) || {
+        date: b.booking_date,
+        facility_name: f?.name || "",
+        sport_type: f?.sport_type || "",
+        booking_status: b.status,
+        bookings: 0,
+        revenue: 0,
+      };
+      cur.bookings += 1;
+      if (b.status === "paid" || b.status === "completed") cur.revenue += Number(b.total_price);
+      buckets.set(key, cur);
+    });
+    const rows = Array.from(buckets.values())
+      .sort((a, b) => a.date.localeCompare(b.date) || a.facility_name.localeCompare(b.facility_name))
+      .map((r) => ({ ...r, revenue_php: r.revenue.toFixed(2) }))
+      .map(({ revenue, ...rest }) => rest);
     downloadCSV(`revenue_${exportFrom}_to_${exportTo}.csv`, toCSV(rows));
-    toast.success("Revenue analytics exported");
+    toast.success(`Exported ${rows.length} revenue row${rows.length === 1 ? "" : "s"}`);
   };
 
   if (loading || authLoading || rolesLoading) {
