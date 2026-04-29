@@ -14,8 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { formatPHP } from "@/lib/format";
-import { LayoutDashboard, Plus, Pencil, TrendingUp, CalendarCheck2, Wallet } from "lucide-react";
+import { LayoutDashboard, Plus, Pencil, TrendingUp, CalendarCheck2, Wallet, Download } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { toCSV, downloadCSV } from "@/lib/csv";
 
 interface Facility {
   id: string; name: string; sport_type: string; location: string;
@@ -44,6 +45,8 @@ export default function OwnerDashboard() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<Facility> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [exportFrom, setExportFrom] = useState(format(subDays(new Date(), 30), "yyyy-MM-dd"));
+  const [exportTo, setExportTo] = useState(format(new Date(), "yyyy-MM-dd"));
 
   useEffect(() => { document.title = "Owner Dashboard · Courtside"; }, []);
 
