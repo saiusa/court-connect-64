@@ -135,6 +135,28 @@ export default function MyBookings() {
     return c;
   }, [bookings]);
 
+  // Autocomplete suggestions: facility names, dates, and booking IDs matching current input
+  const suggestions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    const facilities = new Set<string>();
+    const dates = new Set<string>();
+    const ids: string[] = [];
+    bookings.forEach((b) => {
+      const name = b.facilities?.name;
+      if (name && name.toLowerCase().includes(q)) facilities.add(name);
+      const pretty = format(parseISO(b.booking_date), "PPP");
+      if (pretty.toLowerCase().includes(q) || b.booking_date.includes(q)) dates.add(pretty);
+      const shortId = b.id.slice(0, 8).toUpperCase();
+      if (shortId.toLowerCase().includes(q.replace(/^#/, ""))) ids.push(`#${shortId}`);
+    });
+    return [
+      ...Array.from(facilities).slice(0, 4).map((v) => ({ kind: "Facility", value: v })),
+      ...Array.from(dates).slice(0, 4).map((v) => ({ kind: "Date", value: v })),
+      ...ids.slice(0, 4).map((v) => ({ kind: "Booking ID", value: v })),
+    ].slice(0, 8);
+  }, [search, bookings]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
