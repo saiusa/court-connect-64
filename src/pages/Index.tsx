@@ -42,7 +42,7 @@ export default function Index() {
             BOOK YOUR<br /><span className="text-gradient">COURT.</span> PLAY.
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-8 animate-fade-up">
-            From basketball courts to badminton halls, soccer pitches to gyms — reserve your spot in seconds, no calls, no hassle.
+            Butuan City's home for sports facility bookings — basketball courts, badminton halls, soccer pitches, and gyms. Reserve your spot in seconds.
           </p>
           <div className="flex flex-wrap gap-3 animate-fade-up">
             <Button asChild size="lg" className="h-14 px-8 text-base font-bold tracking-wider shadow-glow">
@@ -59,10 +59,10 @@ export default function Index() {
       <section className="container py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { icon: MapPin, label: "Local Venues", value: "120+" },
-            { icon: Calendar, label: "Bookings This Month", value: "8.4K" },
-            { icon: Users, label: "Active Players", value: "12K" },
-            { icon: Zap, label: "Avg. Booking Time", value: "<30s" },
+            { icon: MapPin, label: "Butuan venues", value: "30+" },
+            { icon: Calendar, label: "Bookings this month", value: "1.2K" },
+            { icon: Users, label: "Active players", value: "3.5K" },
+            { icon: Zap, label: "Avg. booking time", value: "<30s" },
           ].map((s, i) => (
             <div key={i} className="bg-card-gradient border border-border rounded-2xl p-6 shadow-card hover:shadow-elevated hover:-translate-y-1 transition-all">
               <s.icon className="size-6 text-accent mb-3" />

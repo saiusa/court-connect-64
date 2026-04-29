@@ -8,8 +8,11 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { resolveFacilityImage } from "@/lib/facility-images";
+import { formatPHP } from "@/lib/format";
+import { PaymentDialog } from "@/components/PaymentDialog";
+import { RecurringBookingDialog } from "@/components/RecurringBookingDialog";
 import { toast } from "sonner";
-import { MapPin, Clock, DollarSign, ArrowLeft } from "lucide-react";
+import { MapPin, Clock, ArrowLeft, Users, Banknote } from "lucide-react";
 
 interface Facility {
   id: string;
@@ -32,7 +35,11 @@ export default function FacilityDetail() {
   const [bookedHours, setBookedHours] = useState<number[]>([]);
   const [selectedHours, setSelectedHours] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
-  const [booking, setBooking] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [pendingBookingId, setPendingBookingId] = useState<string | null>(null);
+  const [pendingAmount, setPendingAmount] = useState(0);
+  const [payOpen, setPayOpen] = useState(false);
+  const [seriesOpen, setSeriesOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -43,15 +50,15 @@ export default function FacilityDetail() {
     });
   }, [id]);
 
-  useEffect(() => {
+  const refreshSlots = () => {
     if (!id || !date) return;
     const dateStr = format(date, "yyyy-MM-dd");
-    setSelectedHours([]);
     supabase
       .from("bookings")
-      .select("start_hour,end_hour")
+      .select("start_hour,end_hour,status")
       .eq("facility_id", id)
       .eq("booking_date", dateStr)
+      .neq("status", "cancelled")
       .then(({ data }) => {
         const hours: number[] = [];
         (data || []).forEach((b: any) => {
@@ -59,6 +66,12 @@ export default function FacilityDetail() {
         });
         setBookedHours(hours);
       });
+  };
+
+  useEffect(() => {
+    setSelectedHours([]);
+    refreshSlots();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, date]);
 
   const toggleHour = (h: number) => {
@@ -66,11 +79,10 @@ export default function FacilityDetail() {
     setSelectedHours((prev) => (prev.includes(h) ? prev.filter((x) => x !== h) : [...prev, h].sort((a, b) => a - b)));
   };
 
-  const handleBook = async () => {
+  const handleReserve = async () => {
     if (!user) { navigate("/auth"); return; }
     if (!facility || !date || selectedHours.length === 0) return;
 
-    // Validate contiguous
     const sorted = [...selectedHours].sort((a, b) => a - b);
     for (let i = 1; i < sorted.length; i++) {
       if (sorted[i] !== sorted[i - 1] + 1) {
@@ -79,28 +91,35 @@ export default function FacilityDetail() {
       }
     }
 
-    setBooking(true);
+    setCreating(true);
     const dateStr = format(date, "yyyy-MM-dd");
     const start_hour = sorted[0];
     const end_hour = sorted[sorted.length - 1] + 1;
     const total_price = (end_hour - start_hour) * Number(facility.hourly_price);
 
-    const { error } = await supabase.from("bookings").insert({
-      user_id: user.id,
-      facility_id: facility.id,
-      booking_date: dateStr,
-      start_hour,
-      end_hour,
-      total_price,
-      status: "confirmed",
-    });
-    setBooking(false);
-    if (error) {
-      toast.error(error.message.includes("duplicate") ? "Slot just got taken. Try another." : error.message);
+    const { data, error } = await supabase
+      .from("bookings")
+      .insert({
+        user_id: user.id,
+        facility_id: facility.id,
+        booking_date: dateStr,
+        start_hour,
+        end_hour,
+        total_price,
+        status: "pending",
+      })
+      .select()
+      .single();
+
+    setCreating(false);
+    if (error || !data) {
+      toast.error(error?.message?.includes("duplicate") ? "Slot just got taken." : (error?.message || "Could not reserve"));
       return;
     }
-    toast.success(`Booked ${facility.name} for ${end_hour - start_hour}h on ${format(date, "PPP")}`);
-    navigate("/my-bookings");
+    setPendingBookingId(data.id);
+    setPendingAmount(total_price);
+    setPayOpen(true);
+    toast.success("Slot reserved · complete payment to confirm.");
   };
 
   if (loading) {
@@ -141,7 +160,7 @@ export default function FacilityDetail() {
             <div className="flex flex-wrap gap-6 mt-4 text-sm">
               <div className="flex items-center gap-2"><MapPin className="size-4 text-accent" />{facility.location}</div>
               <div className="flex items-center gap-2"><Clock className="size-4 text-accent" />{facility.open_hour}:00 – {facility.close_hour}:00</div>
-              <div className="flex items-center gap-2"><DollarSign className="size-4 text-accent" />${facility.hourly_price}/hour</div>
+              <div className="flex items-center gap-2"><Banknote className="size-4 text-accent" />{formatPHP(facility.hourly_price)}/hour</div>
             </div>
           </div>
         </div>
@@ -151,7 +170,14 @@ export default function FacilityDetail() {
             <h2 className="font-display text-3xl tracking-wider mb-3">About</h2>
             <p className="text-muted-foreground leading-relaxed mb-8">{facility.description}</p>
 
-            <h2 className="font-display text-3xl tracking-wider mb-3">Pick a date</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+              <h2 className="font-display text-3xl tracking-wider">Pick a date</h2>
+              {user && (
+                <Button variant="outline" size="sm" onClick={() => setSeriesOpen(true)}>
+                  <Users className="size-4" /> Recurring team series
+                </Button>
+              )}
+            </div>
             <div className="bg-card-gradient border border-border rounded-2xl p-4 inline-block">
               <Calendar
                 mode="single"
@@ -193,21 +219,52 @@ export default function FacilityDetail() {
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Date</span><span>{date ? format(date, "PPP") : "—"}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Hours</span><span>{selectedHours.length}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Price/hr</span><span>${facility.hourly_price}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Price/hr</span><span>{formatPHP(facility.hourly_price)}</span></div>
               <div className="border-t border-border my-3" />
-              <div className="flex justify-between text-lg font-bold"><span>Total</span><span className="text-accent">${totalPrice.toFixed(2)}</span></div>
+              <div className="flex justify-between text-lg font-bold"><span>Total</span><span className="text-accent">{formatPHP(totalPrice)}</span></div>
             </div>
             <Button
-              onClick={handleBook}
-              disabled={booking || selectedHours.length === 0}
+              onClick={handleReserve}
+              disabled={creating || selectedHours.length === 0}
               size="lg"
               className="w-full mt-6"
             >
-              {!user ? "Sign in to book" : booking ? "Booking…" : "Confirm booking"}
+              {!user ? "Sign in to book" : creating ? "Reserving…" : "Reserve & pay"}
             </Button>
+            <p className="text-[11px] text-muted-foreground text-center mt-3">Slot is held as <strong>pending</strong> until payment confirms it.</p>
           </aside>
         </div>
       </main>
+
+      {pendingBookingId && (
+        <PaymentDialog
+          open={payOpen}
+          onOpenChange={(v) => {
+            setPayOpen(v);
+            if (!v) refreshSlots();
+          }}
+          bookingIds={[pendingBookingId]}
+          amount={pendingAmount}
+          onPaid={() => {
+            setSelectedHours([]);
+            navigate("/my-bookings");
+          }}
+        />
+      )}
+
+      {user && (
+        <RecurringBookingDialog
+          open={seriesOpen}
+          onOpenChange={setSeriesOpen}
+          facility={facility}
+          userId={user.id}
+          onCreated={() => {
+            refreshSlots();
+            navigate("/my-bookings");
+          }}
+        />
+      )}
+
       <Footer />
     </div>
   );
