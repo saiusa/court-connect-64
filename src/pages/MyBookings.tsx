@@ -160,6 +160,22 @@ export default function MyBookings() {
     return c;
   }, [bookings]);
 
+  const facilityOptions = useMemo(() => {
+    const set = new Set<string>();
+    bookings.forEach((b) => { if (b.facilities?.name) set.add(b.facilities.name); });
+    return Array.from(set).sort();
+  }, [bookings]);
+
+  const advActive = !!(advBookingId || (advFacility && advFacility !== "__any__") || advFrom || advTo);
+  const advCount = [advBookingId, advFacility !== "__any__" ? advFacility : "", advFrom, advTo].filter(Boolean).length;
+
+  const clearAdvanced = () => {
+    setAdvBookingId("");
+    setAdvFacility("__any__");
+    setAdvFrom("");
+    setAdvTo("");
+  };
+
   // Autocomplete suggestions: facility names, dates, and booking IDs matching current input
   const suggestions = useMemo(() => {
     const q = search.trim().toLowerCase();
