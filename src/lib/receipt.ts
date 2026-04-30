@@ -14,7 +14,8 @@ interface ReceiptBooking {
   facilities: { name?: string; sport_type?: string; location?: string } | null;
 }
 
-export function downloadReceipt(b: ReceiptBooking, customerName?: string) {
+export function downloadReceipt(b: ReceiptBooking, customerName?: string, opts?: { includeOwnerNotes?: boolean }) {
+  const includeOwnerNotes = opts?.includeOwnerNotes !== false;
   const issued = b.paid_at ? format(parseISO(b.paid_at), "PPpp") : format(new Date(), "PPpp");
   const dateStr = format(parseISO(b.booking_date), "PPP");
   const html = `<!doctype html>
