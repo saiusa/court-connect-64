@@ -161,6 +161,7 @@ export default function OwnerDashboard() {
         end_hour: b.end_hour,
         hours: b.end_hour - b.start_hour,
         amount_php: Number(b.total_price).toFixed(2),
+        owner_notes: (b.owner_notes || "").replace(/\s+/g, " ").trim(),
       };
     });
     downloadCSV(`bookings_${exportFrom}_to_${exportTo}.csv`, toCSV(rows));
