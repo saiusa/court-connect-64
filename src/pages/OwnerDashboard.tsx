@@ -286,9 +286,20 @@ export default function OwnerDashboard() {
               <Download className="size-4" /> Revenue CSV
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground mt-3">
-            Exports include all of your facilities. Revenue rows aggregate paid &amp; completed bookings per day.
-          </p>
+          <div className="mt-4 flex items-center justify-between flex-wrap gap-3">
+            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+              <Checkbox
+                checked={includeNotesInCSV}
+                onCheckedChange={(v) => setIncludeNotesInCSV(v === true)}
+                aria-label="Include owner notes column"
+              />
+              <StickyNote className="size-4 text-accent" />
+              <span>Include <strong className="text-foreground">owner notes</strong> column in Bookings CSV</span>
+            </label>
+            <p className="text-xs text-muted-foreground">
+              Revenue rows aggregate paid &amp; completed bookings per day.
+            </p>
+          </div>
         </div>
 
         {/* Charts */}
