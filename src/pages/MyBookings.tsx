@@ -435,10 +435,22 @@ function BookingRow({
               <CreditCard className="size-4" /> Pay now
             </Button>
           )}
-          {(b.status === "paid" || b.status === "completed") && (
-            <Button variant="outline" size="sm" onClick={() => downloadReceipt(b, customerName)}>
-              <Receipt className="size-4" /> Receipt
-            </Button>
+          {canShowReceipt && (
+            <div className="flex flex-col gap-1.5 items-end">
+              <Button variant="outline" size="sm" onClick={() => downloadReceipt(b, customerName, { includeOwnerNotes: includeNotes })}>
+                <Receipt className="size-4" /> Receipt
+              </Button>
+              {b.owner_notes && (
+                <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                  <Checkbox
+                    checked={includeNotes}
+                    onCheckedChange={(v) => setIncludeNotes(v === true)}
+                    className="size-3.5"
+                  />
+                  Include owner notes
+                </label>
+              )}
+            </div>
           )}
           {b.status !== "cancelled" && !isPast && (
             <Button variant="outline" size="sm" onClick={() => onCancel(b.id)}>
