@@ -58,6 +58,11 @@ export default function MyBookings() {
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [customerName, setCustomerName] = useState<string>("");
+  // Advanced filters
+  const [advBookingId, setAdvBookingId] = useState("");
+  const [advFacility, setAdvFacility] = useState("__any__");
+  const [advFrom, setAdvFrom] = useState("");
+  const [advTo, setAdvTo] = useState("");
 
   useEffect(() => { document.title = "My Bookings · Courtside"; }, []);
 
