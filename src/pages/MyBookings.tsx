@@ -7,6 +7,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { resolveFacilityImage } from "@/lib/facility-images";
 import { formatPHP } from "@/lib/format";
 import { BookingTimeline, type BookingStatus } from "@/components/BookingTimeline";
