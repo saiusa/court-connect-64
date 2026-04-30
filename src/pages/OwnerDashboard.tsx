@@ -47,6 +47,7 @@ export default function OwnerDashboard() {
   const [saving, setSaving] = useState(false);
   const [exportFrom, setExportFrom] = useState(format(subDays(new Date(), 30), "yyyy-MM-dd"));
   const [exportTo, setExportTo] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [includeNotesInCSV, setIncludeNotesInCSV] = useState(true);
 
   useEffect(() => { document.title = "Owner Dashboard · Courtside"; }, []);
 
@@ -151,7 +152,7 @@ export default function OwnerDashboard() {
     });
     const rows = filtered.map((b) => {
       const f = facilities.find((x) => x.id === b.facility_id);
-      return {
+      const base: Record<string, any> = {
         booking_id: b.id,
         facility_name: f?.name || "",
         sport_type: f?.sport_type || "",
@@ -161,8 +162,11 @@ export default function OwnerDashboard() {
         end_hour: b.end_hour,
         hours: b.end_hour - b.start_hour,
         amount_php: Number(b.total_price).toFixed(2),
-        owner_notes: (b.owner_notes || "").replace(/\s+/g, " ").trim(),
       };
+      if (includeNotesInCSV) {
+        base.owner_notes = (b.owner_notes || "").replace(/\s+/g, " ").trim();
+      }
+      return base;
     });
     downloadCSV(`bookings_${exportFrom}_to_${exportTo}.csv`, toCSV(rows));
     toast.success(`Exported ${rows.length} booking${rows.length === 1 ? "" : "s"}`);
