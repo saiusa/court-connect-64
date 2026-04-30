@@ -198,6 +198,16 @@ export default function MyBookings() {
     ].slice(0, 8);
   }, [search, bookings]);
 
+  // Datalist sources for the Advanced filter inputs (autocomplete)
+  const advBookingIdOptions = useMemo(
+    () => bookings.map((b) => b.id.slice(0, 8).toUpperCase()),
+    [bookings],
+  );
+  const advDateOptions = useMemo(
+    () => Array.from(new Set(bookings.map((b) => b.booking_date))).sort(),
+    [bookings],
+  );
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
