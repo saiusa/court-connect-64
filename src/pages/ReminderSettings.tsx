@@ -135,6 +135,32 @@ export default function ReminderSettings() {
 
         {/* Master switch + delivery channel — always visible (sticky) */}
         <section className="sticky top-4 z-10 bg-card-gradient/95 backdrop-blur border border-border rounded-2xl p-5 shadow-card mb-6">
+          {/* Status banner */}
+          <div
+            role="status"
+            aria-live="polite"
+            className={`rounded-xl border px-4 py-3 mb-5 flex items-center gap-3 ${
+              mainEnabled
+                ? "border-accent/40 bg-accent/10 text-foreground"
+                : "border-destructive/40 bg-destructive/10 text-foreground"
+            }`}
+          >
+            {mainEnabled ? <Bell className="size-5 text-accent flex-shrink-0" /> : <BellOff className="size-5 text-destructive flex-shrink-0" />}
+            <div className="flex-1 min-w-0">
+              <div className="font-display text-lg tracking-wider leading-tight">
+                {mainEnabled ? "Reminders are ON" : "Reminders are OFF"}
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {mainEnabled
+                  ? "You'll receive every active lead time below using your selected delivery method."
+                  : "Delivery is disabled. Your reminders and lead times are saved — turn the master switch on to resume."}
+              </p>
+            </div>
+            <span className={`text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded ${mainEnabled ? "bg-accent text-accent-foreground" : "bg-destructive text-destructive-foreground"}`}>
+              {mainEnabled ? "On" : "Off"}
+            </span>
+          </div>
+
           <div className="flex items-start justify-between gap-4 pb-5 border-b border-border">
             <div className="flex gap-3">
               {mainEnabled ? <Bell className="size-5 text-accent mt-1" /> : <BellOff className="size-5 text-muted-foreground mt-1" />}
@@ -152,9 +178,11 @@ export default function ReminderSettings() {
           </div>
 
           <div className="pt-5">
-            <Label className="mb-2 block">Delivery method</Label>
+            <Label className={`mb-2 block ${!mainEnabled ? "opacity-60" : ""}`}>Delivery method</Label>
             <Select value={channel} onValueChange={(v) => updateChannel(v as Channel)} disabled={!mainEnabled}>
-              <SelectTrigger className="max-w-md"><SelectValue /></SelectTrigger>
+              <SelectTrigger className={`max-w-md ${!mainEnabled ? "opacity-60 cursor-not-allowed" : ""}`} aria-disabled={!mainEnabled}>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="in_app">
                   <div className="flex items-center gap-2"><Smartphone className="size-4" /> In-app notifications</div>
@@ -171,7 +199,7 @@ export default function ReminderSettings() {
             )}
             {!mainEnabled && (
               <p className="text-xs text-muted-foreground mt-2">
-                All reminders are paused. Turn the master switch on to resume delivery and re-enable the controls below.
+                Delivery selection is locked while reminders are off. Turn the master switch on to change it.
               </p>
             )}
           </div>
