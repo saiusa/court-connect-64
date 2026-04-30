@@ -463,7 +463,7 @@ function BookingRow({
                 <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
                   <Checkbox
                     checked={includeNotes}
-                    onCheckedChange={(v) => setIncludeNotes(v === true)}
+                    onCheckedChange={(v) => updateIncludeNotes(v === true)}
                     className="size-3.5"
                   />
                   Include owner notes
