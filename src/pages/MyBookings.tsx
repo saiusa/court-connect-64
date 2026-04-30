@@ -7,12 +7,16 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { resolveFacilityImage } from "@/lib/facility-images";
 import { formatPHP } from "@/lib/format";
 import { BookingTimeline, type BookingStatus } from "@/components/BookingTimeline";
 import { PaymentDialog } from "@/components/PaymentDialog";
 import { toast } from "sonner";
-import { Calendar, Clock, MapPin, X, CreditCard, Users, Receipt, Search, StickyNote, XCircle } from "lucide-react";
+import { Calendar, Clock, MapPin, X, CreditCard, Users, Receipt, Search, StickyNote, XCircle, SlidersHorizontal } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { downloadReceipt } from "@/lib/receipt";
 
 interface Booking {
@@ -55,6 +59,11 @@ export default function MyBookings() {
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [customerName, setCustomerName] = useState<string>("");
+  // Advanced filters
+  const [advBookingId, setAdvBookingId] = useState("");
+  const [advFacility, setAdvFacility] = useState("__any__");
+  const [advFrom, setAdvFrom] = useState("");
+  const [advTo, setAdvTo] = useState("");
 
   useEffect(() => { document.title = "My Bookings · Courtside"; }, []);
 
@@ -87,15 +96,31 @@ export default function MyBookings() {
     toast.success("Booking cancelled");
   };
 
-  // Apply filter + search, then group by series
+  // Apply filter + search + advanced filters
   const filteredBookings = useMemo(() => {
     const today = new Date(new Date().setHours(0, 0, 0, 0));
     const q = search.trim().toLowerCase();
+    const idQuery = advBookingId.trim().toLowerCase().replace(/^#/, "");
+    const fromD = advFrom ? parseISO(advFrom) : null;
+    const toD = advTo ? parseISO(advTo) : null;
     return bookings.filter((b) => {
-      // Display status (paid + past = completed)
       const isPast = parseISO(b.booking_date) < today;
       const displayStatus: BookingStatus = b.status === "paid" && isPast ? "completed" : b.status;
       if (filter !== "all" && displayStatus !== filter) return false;
+
+      // Exact booking ID match (full UUID or 8-char short id)
+      if (idQuery) {
+        const full = b.id.toLowerCase();
+        const short = b.id.slice(0, 8).toLowerCase();
+        if (full !== idQuery && short !== idQuery) return false;
+      }
+      // Exact facility name match
+      if (advFacility !== "__any__" && b.facilities?.name !== advFacility) return false;
+      // Date range
+      const bd = parseISO(b.booking_date);
+      if (fromD && bd < fromD) return false;
+      if (toD && bd > toD) return false;
+
       if (!q) return true;
       const haystack = [
         b.id,
@@ -109,7 +134,7 @@ export default function MyBookings() {
       ].filter(Boolean).join(" ").toLowerCase();
       return haystack.includes(q);
     });
-  }, [bookings, filter, search]);
+  }, [bookings, filter, search, advBookingId, advFacility, advFrom, advTo]);
 
   const grouped = useMemo(() => {
     const series = new Map<string, Booking[]>();
@@ -134,6 +159,22 @@ export default function MyBookings() {
     });
     return c;
   }, [bookings]);
+
+  const facilityOptions = useMemo(() => {
+    const set = new Set<string>();
+    bookings.forEach((b) => { if (b.facilities?.name) set.add(b.facilities.name); });
+    return Array.from(set).sort();
+  }, [bookings]);
+
+  const advActive = !!(advBookingId || (advFacility && advFacility !== "__any__") || advFrom || advTo);
+  const advCount = [advBookingId, advFacility !== "__any__" ? advFacility : "", advFrom, advTo].filter(Boolean).length;
+
+  const clearAdvanced = () => {
+    setAdvBookingId("");
+    setAdvFacility("__any__");
+    setAdvFrom("");
+    setAdvTo("");
+  };
 
   // Autocomplete suggestions: facility names, dates, and booking IDs matching current input
   const suggestions = useMemo(() => {
@@ -219,6 +260,53 @@ export default function MyBookings() {
                   </span>
                 </Button>
               ))}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant={advActive ? "default" : "outline"} size="sm" className="font-bold tracking-wider">
+                    <SlidersHorizontal className="size-4" /> Advanced
+                    {advActive && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-primary-foreground/20">{advCount}</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="end">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-display text-lg tracking-wider">Advanced filters</h4>
+                      {advActive && (
+                        <Button variant="ghost" size="sm" onClick={clearAdvanced} className="h-7 px-2 text-xs">Clear</Button>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-xs">Booking ID (exact)</Label>
+                      <Input
+                        value={advBookingId}
+                        onChange={(e) => setAdvBookingId(e.target.value)}
+                        placeholder="e.g. A1B2C3D4 or full UUID"
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Facility (exact match)</Label>
+                      <Select value={advFacility} onValueChange={setAdvFacility}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__any__">Any facility</SelectItem>
+                          {facilityOptions.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs">From</Label>
+                        <Input type="date" value={advFrom} onChange={(e) => setAdvFrom(e.target.value)} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">To</Label>
+                        <Input type="date" value={advTo} onChange={(e) => setAdvTo(e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         )}
@@ -233,7 +321,7 @@ export default function MyBookings() {
         ) : filteredBookings.length === 0 ? (
           <div className="text-center py-16 bg-card-gradient border border-border rounded-2xl">
             <p className="text-muted-foreground mb-4">No bookings match your filters.</p>
-            <Button variant="outline" onClick={() => { setFilter("all"); setSearch(""); }}>Clear filters</Button>
+            <Button variant="outline" onClick={() => { setFilter("all"); setSearch(""); clearAdvanced(); }}>Clear filters</Button>
           </div>
         ) : (
           <div className="space-y-8">
@@ -307,6 +395,8 @@ function BookingRow({
   const isPast = parseISO(b.booking_date) < new Date(new Date().setHours(0, 0, 0, 0));
   const displayStatus: BookingStatus =
     b.status === "paid" && isPast ? "completed" : b.status;
+  const [includeNotes, setIncludeNotes] = useState(true);
+  const canShowReceipt = b.status === "paid" || b.status === "completed";
 
   return (
     <div className="grid sm:grid-cols-[160px_1fr_auto] gap-5 bg-card-gradient border border-border rounded-2xl p-4 shadow-card">
@@ -345,10 +435,22 @@ function BookingRow({
               <CreditCard className="size-4" /> Pay now
             </Button>
           )}
-          {(b.status === "paid" || b.status === "completed") && (
-            <Button variant="outline" size="sm" onClick={() => downloadReceipt(b, customerName)}>
-              <Receipt className="size-4" /> Receipt
-            </Button>
+          {canShowReceipt && (
+            <div className="flex flex-col gap-1.5 items-end">
+              <Button variant="outline" size="sm" onClick={() => downloadReceipt(b, customerName, { includeOwnerNotes: includeNotes })}>
+                <Receipt className="size-4" /> Receipt
+              </Button>
+              {b.owner_notes && (
+                <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                  <Checkbox
+                    checked={includeNotes}
+                    onCheckedChange={(v) => setIncludeNotes(v === true)}
+                    className="size-3.5"
+                  />
+                  Include owner notes
+                </label>
+              )}
+            </div>
           )}
           {b.status !== "cancelled" && !isPast && (
             <Button variant="outline" size="sm" onClick={() => onCancel(b.id)}>

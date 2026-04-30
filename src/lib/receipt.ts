@@ -14,7 +14,8 @@ interface ReceiptBooking {
   facilities: { name?: string; sport_type?: string; location?: string } | null;
 }
 
-export function downloadReceipt(b: ReceiptBooking, customerName?: string) {
+export function downloadReceipt(b: ReceiptBooking, customerName?: string, opts?: { includeOwnerNotes?: boolean }) {
+  const includeOwnerNotes = opts?.includeOwnerNotes !== false;
   const issued = b.paid_at ? format(parseISO(b.paid_at), "PPpp") : format(new Date(), "PPpp");
   const dateStr = format(parseISO(b.booking_date), "PPP");
   const html = `<!doctype html>
@@ -68,7 +69,7 @@ export function downloadReceipt(b: ReceiptBooking, customerName?: string) {
     <div class="row"><span>Time</span><span>${b.start_hour}:00 – ${b.end_hour}:00 (${b.end_hour - b.start_hour} hr)</span></div>
     <div class="row"><span>Payment ref</span><span style="font-family:monospace">${escapeHtml(b.payment_ref || "—")}</span></div>
 
-    ${b.owner_notes ? `<h2 style="margin-top:28px">Notes from facility</h2>
+    ${includeOwnerNotes && b.owner_notes ? `<h2 style="margin-top:28px">Notes from facility</h2>
     <div style="background:#f5f7fa;border-left:4px solid #2d8a9e;padding:14px 18px;border-radius:8px;color:#0c2340;font-size:14px;line-height:1.6;white-space:pre-wrap">${escapeHtml(b.owner_notes)}</div>` : ""}
 
     <div class="total">

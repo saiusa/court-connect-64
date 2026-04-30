@@ -161,6 +161,7 @@ export default function OwnerDashboard() {
         end_hour: b.end_hour,
         hours: b.end_hour - b.start_hour,
         amount_php: Number(b.total_price).toFixed(2),
+        owner_notes: (b.owner_notes || "").replace(/\s+/g, " ").trim(),
       };
     });
     downloadCSV(`bookings_${exportFrom}_to_${exportTo}.csv`, toCSV(rows));
@@ -176,7 +177,7 @@ export default function OwnerDashboard() {
       return d >= from && d <= to;
     });
     // Group by date + facility + status (so each row carries facility name, sport, status)
-    const buckets = new Map<string, { date: string; facility_name: string; sport_type: string; booking_status: string; bookings: number; revenue: number }>();
+    const buckets = new Map<string, { date: string; facility_name: string; sport_type: string; booking_status: string; bookings: number; revenue: number; notes: Set<string> }>();
     filtered.forEach((b) => {
       const f = facilities.find((x) => x.id === b.facility_id);
       const key = `${b.booking_date}|${b.facility_id}|${b.status}`;
@@ -187,15 +188,25 @@ export default function OwnerDashboard() {
         booking_status: b.status,
         bookings: 0,
         revenue: 0,
+        notes: new Set<string>(),
       };
       cur.bookings += 1;
       if (b.status === "paid" || b.status === "completed") cur.revenue += Number(b.total_price);
+      const note = (b.owner_notes || "").replace(/\s+/g, " ").trim();
+      if (note) cur.notes.add(note);
       buckets.set(key, cur);
     });
     const rows = Array.from(buckets.values())
       .sort((a, b) => a.date.localeCompare(b.date) || a.facility_name.localeCompare(b.facility_name))
-      .map((r) => ({ ...r, revenue_php: r.revenue.toFixed(2) }))
-      .map(({ revenue, ...rest }) => rest);
+      .map((r) => ({
+        date: r.date,
+        facility_name: r.facility_name,
+        sport_type: r.sport_type,
+        booking_status: r.booking_status,
+        bookings: r.bookings,
+        revenue_php: r.revenue.toFixed(2),
+        owner_notes: Array.from(r.notes).join(" | "),
+      }));
     downloadCSV(`revenue_${exportFrom}_to_${exportTo}.csv`, toCSV(rows));
     toast.success(`Exported ${rows.length} revenue row${rows.length === 1 ? "" : "s"}`);
   };
@@ -457,18 +468,32 @@ function BookingNotesRow({
   onSaved: (notes: string | null) => void;
 }) {
   const [notes, setNotes] = useState(booking.owner_notes || "");
-  const [saving, setSaving] = useState(false);
-  const dirty = (booking.owner_notes || "") !== notes;
+  const [state, setState] = useState<"idle" | "typing" | "saving" | "saved" | "error">("idle");
+  const initial = booking.owner_notes || "";
 
-  const save = async () => {
-    setSaving(true);
-    const value = notes.trim() ? notes.trim() : null;
-    const { error } = await supabase.from("bookings").update({ owner_notes: value }).eq("id", booking.id);
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    onSaved(value);
-    toast.success("Notes saved");
-  };
+  // Debounced autosave
+  useEffect(() => {
+    if (notes === initial && state === "idle") return;
+    if (notes === initial) { setState("idle"); return; }
+    setState("typing");
+    const t = setTimeout(async () => {
+      setState("saving");
+      const value = notes.trim() ? notes.trim() : null;
+      const { error } = await supabase.from("bookings").update({ owner_notes: value }).eq("id", booking.id);
+      if (error) { setState("error"); toast.error(error.message); return; }
+      onSaved(value);
+      setState("saved");
+    }, 800);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notes]);
+
+  // Auto-clear "saved" indicator after a moment
+  useEffect(() => {
+    if (state !== "saved") return;
+    const t = setTimeout(() => setState("idle"), 1800);
+    return () => clearTimeout(t);
+  }, [state]);
 
   const statusColor =
     booking.status === "paid" ? "text-accent"
@@ -476,8 +501,18 @@ function BookingNotesRow({
     : booking.status === "completed" ? "text-primary"
     : "text-muted-foreground";
 
+  const indicator = (() => {
+    switch (state) {
+      case "typing": return <span className="text-muted-foreground">Editing…</span>;
+      case "saving": return <span className="text-muted-foreground flex items-center gap-1"><Loader2 className="size-3 animate-spin" /> Saving…</span>;
+      case "saved": return <span className="text-accent flex items-center gap-1"><Save className="size-3" /> Saved</span>;
+      case "error": return <span className="text-destructive">Save failed — retry</span>;
+      default: return <span className="text-muted-foreground/60">Autosaves as you type</span>;
+    }
+  })();
+
   return (
-    <div className="bg-card-gradient border border-border rounded-2xl p-4 shadow-card grid md:grid-cols-[260px_1fr_auto] gap-4 items-start">
+    <div className="bg-card-gradient border border-border rounded-2xl p-4 shadow-card grid md:grid-cols-[260px_1fr] gap-4 items-start">
       <div>
         <span className="text-[10px] uppercase tracking-widest text-accent font-bold">{sportType}</span>
         <div className="font-display text-xl tracking-wider leading-tight">{facilityName}</div>
@@ -490,9 +525,12 @@ function BookingNotesRow({
         </div>
       </div>
       <div>
-        <Label className="flex items-center gap-1.5 text-xs mb-1.5">
-          <StickyNote className="size-3.5 text-accent" /> Owner notes
-        </Label>
+        <div className="flex items-center justify-between mb-1.5">
+          <Label className="flex items-center gap-1.5 text-xs">
+            <StickyNote className="size-3.5 text-accent" /> Owner notes
+          </Label>
+          <div className="text-[11px] tracking-wider">{indicator}</div>
+        </div>
         <Textarea
           rows={2}
           value={notes}
@@ -501,16 +539,6 @@ function BookingNotesRow({
           className="text-sm"
         />
       </div>
-      <Button
-        size="sm"
-        onClick={save}
-        disabled={!dirty || saving}
-        variant={dirty ? "default" : "outline"}
-        className="md:mt-7"
-      >
-        {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-        {saving ? "Saving" : dirty ? "Save" : "Saved"}
-      </Button>
     </div>
   );
 }
