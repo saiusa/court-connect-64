@@ -321,7 +321,7 @@ export default function MyBookings() {
         ) : filteredBookings.length === 0 ? (
           <div className="text-center py-16 bg-card-gradient border border-border rounded-2xl">
             <p className="text-muted-foreground mb-4">No bookings match your filters.</p>
-            <Button variant="outline" onClick={() => { setFilter("all"); setSearch(""); }}>Clear filters</Button>
+            <Button variant="outline" onClick={() => { setFilter("all"); setSearch(""); clearAdvanced(); }}>Clear filters</Button>
           </div>
         ) : (
           <div className="space-y-8">
