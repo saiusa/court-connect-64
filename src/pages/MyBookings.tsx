@@ -395,6 +395,8 @@ function BookingRow({
   const isPast = parseISO(b.booking_date) < new Date(new Date().setHours(0, 0, 0, 0));
   const displayStatus: BookingStatus =
     b.status === "paid" && isPast ? "completed" : b.status;
+  const [includeNotes, setIncludeNotes] = useState(true);
+  const canShowReceipt = b.status === "paid" || b.status === "completed";
 
   return (
     <div className="grid sm:grid-cols-[160px_1fr_auto] gap-5 bg-card-gradient border border-border rounded-2xl p-4 shadow-card">
