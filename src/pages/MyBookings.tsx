@@ -95,15 +95,31 @@ export default function MyBookings() {
     toast.success("Booking cancelled");
   };
 
-  // Apply filter + search, then group by series
+  // Apply filter + search + advanced filters
   const filteredBookings = useMemo(() => {
     const today = new Date(new Date().setHours(0, 0, 0, 0));
     const q = search.trim().toLowerCase();
+    const idQuery = advBookingId.trim().toLowerCase().replace(/^#/, "");
+    const fromD = advFrom ? parseISO(advFrom) : null;
+    const toD = advTo ? parseISO(advTo) : null;
     return bookings.filter((b) => {
-      // Display status (paid + past = completed)
       const isPast = parseISO(b.booking_date) < today;
       const displayStatus: BookingStatus = b.status === "paid" && isPast ? "completed" : b.status;
       if (filter !== "all" && displayStatus !== filter) return false;
+
+      // Exact booking ID match (full UUID or 8-char short id)
+      if (idQuery) {
+        const full = b.id.toLowerCase();
+        const short = b.id.slice(0, 8).toLowerCase();
+        if (full !== idQuery && short !== idQuery) return false;
+      }
+      // Exact facility name match
+      if (advFacility !== "__any__" && b.facilities?.name !== advFacility) return false;
+      // Date range
+      const bd = parseISO(b.booking_date);
+      if (fromD && bd < fromD) return false;
+      if (toD && bd > toD) return false;
+
       if (!q) return true;
       const haystack = [
         b.id,
@@ -117,7 +133,7 @@ export default function MyBookings() {
       ].filter(Boolean).join(" ").toLowerCase();
       return haystack.includes(q);
     });
-  }, [bookings, filter, search]);
+  }, [bookings, filter, search, advBookingId, advFacility, advFrom, advTo]);
 
   const grouped = useMemo(() => {
     const series = new Map<string, Booking[]>();
