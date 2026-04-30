@@ -177,7 +177,7 @@ export default function OwnerDashboard() {
       return d >= from && d <= to;
     });
     // Group by date + facility + status (so each row carries facility name, sport, status)
-    const buckets = new Map<string, { date: string; facility_name: string; sport_type: string; booking_status: string; bookings: number; revenue: number }>();
+    const buckets = new Map<string, { date: string; facility_name: string; sport_type: string; booking_status: string; bookings: number; revenue: number; notes: Set<string> }>();
     filtered.forEach((b) => {
       const f = facilities.find((x) => x.id === b.facility_id);
       const key = `${b.booking_date}|${b.facility_id}|${b.status}`;
@@ -188,15 +188,25 @@ export default function OwnerDashboard() {
         booking_status: b.status,
         bookings: 0,
         revenue: 0,
+        notes: new Set<string>(),
       };
       cur.bookings += 1;
       if (b.status === "paid" || b.status === "completed") cur.revenue += Number(b.total_price);
+      const note = (b.owner_notes || "").replace(/\s+/g, " ").trim();
+      if (note) cur.notes.add(note);
       buckets.set(key, cur);
     });
     const rows = Array.from(buckets.values())
       .sort((a, b) => a.date.localeCompare(b.date) || a.facility_name.localeCompare(b.facility_name))
-      .map((r) => ({ ...r, revenue_php: r.revenue.toFixed(2) }))
-      .map(({ revenue, ...rest }) => rest);
+      .map((r) => ({
+        date: r.date,
+        facility_name: r.facility_name,
+        sport_type: r.sport_type,
+        booking_status: r.booking_status,
+        bookings: r.bookings,
+        revenue_php: r.revenue.toFixed(2),
+        owner_notes: Array.from(r.notes).join(" | "),
+      }));
     downloadCSV(`revenue_${exportFrom}_to_${exportTo}.csv`, toCSV(rows));
     toast.success(`Exported ${rows.length} revenue row${rows.length === 1 ? "" : "s"}`);
   };
