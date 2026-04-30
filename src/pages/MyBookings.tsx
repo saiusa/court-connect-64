@@ -260,6 +260,53 @@ export default function MyBookings() {
                   </span>
                 </Button>
               ))}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant={advActive ? "default" : "outline"} size="sm" className="font-bold tracking-wider">
+                    <SlidersHorizontal className="size-4" /> Advanced
+                    {advActive && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-primary-foreground/20">{advCount}</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="end">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-display text-lg tracking-wider">Advanced filters</h4>
+                      {advActive && (
+                        <Button variant="ghost" size="sm" onClick={clearAdvanced} className="h-7 px-2 text-xs">Clear</Button>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-xs">Booking ID (exact)</Label>
+                      <Input
+                        value={advBookingId}
+                        onChange={(e) => setAdvBookingId(e.target.value)}
+                        placeholder="e.g. A1B2C3D4 or full UUID"
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Facility (exact match)</Label>
+                      <Select value={advFacility} onValueChange={setAdvFacility}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__any__">Any facility</SelectItem>
+                          {facilityOptions.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs">From</Label>
+                        <Input type="date" value={advFrom} onChange={(e) => setAdvFrom(e.target.value)} />
+                      </div>
+                      <div>
+                        <Label className="text-xs">To</Label>
+                        <Input type="date" value={advTo} onChange={(e) => setAdvTo(e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         )}
