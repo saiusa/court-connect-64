@@ -71,7 +71,8 @@ export function Navbar() {
             width={160}
             height={40}
             decoding="async"
-            fetchPriority="high"
+            // @ts-expect-error fetchpriority is a valid HTML attr but not yet in React's TSX types
+            fetchpriority="high"
             className="h-9 sm:h-10 w-auto group-hover:scale-105 transition-transform dark:brightness-0 dark:invert"
             style={{ imageRendering: "auto" }}
           />
