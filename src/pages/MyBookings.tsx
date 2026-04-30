@@ -336,7 +336,6 @@ export default function MyBookings() {
                       </datalist>
                     </div>
                   </div>
-                  </div>
                 </PopoverContent>
               </Popover>
             </div>
