@@ -395,7 +395,26 @@ function BookingRow({
   const isPast = parseISO(b.booking_date) < new Date(new Date().setHours(0, 0, 0, 0));
   const displayStatus: BookingStatus =
     b.status === "paid" && isPast ? "completed" : b.status;
-  const [includeNotes, setIncludeNotes] = useState(true);
+  const [includeNotes, setIncludeNotes] = useState<boolean>(() => {
+    // 1) per-booking preference (persisted across sessions in localStorage)
+    try {
+      const stored = localStorage.getItem(`courtside:receiptNotes:${b.id}`);
+      if (stored !== null) return stored === "1";
+    } catch {}
+    // 2) last-used default for this session (sessionStorage)
+    try {
+      const last = sessionStorage.getItem("courtside:receiptNotes:lastUsed");
+      if (last !== null) return last === "1";
+    } catch {}
+    return true;
+  });
+  const updateIncludeNotes = (next: boolean) => {
+    setIncludeNotes(next);
+    try {
+      localStorage.setItem(`courtside:receiptNotes:${b.id}`, next ? "1" : "0");
+      sessionStorage.setItem("courtside:receiptNotes:lastUsed", next ? "1" : "0");
+    } catch {}
+  };
   const canShowReceipt = b.status === "paid" || b.status === "completed";
 
   return (
