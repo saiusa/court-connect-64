@@ -198,6 +198,16 @@ export default function MyBookings() {
     ].slice(0, 8);
   }, [search, bookings]);
 
+  // Datalist sources for the Advanced filter inputs (autocomplete)
+  const advBookingIdOptions = useMemo(
+    () => bookings.map((b) => b.id.slice(0, 8).toUpperCase()),
+    [bookings],
+  );
+  const advDateOptions = useMemo(
+    () => Array.from(new Set(bookings.map((b) => b.booking_date))).sort(),
+    [bookings],
+  );
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -276,13 +286,19 @@ export default function MyBookings() {
                       )}
                     </div>
                     <div>
-                      <Label className="text-xs">Booking ID (exact)</Label>
+                      <Label className="text-xs" htmlFor="adv-booking-id">Booking ID (exact)</Label>
                       <Input
+                        id="adv-booking-id"
                         value={advBookingId}
                         onChange={(e) => setAdvBookingId(e.target.value)}
                         placeholder="e.g. A1B2C3D4 or full UUID"
                         className="font-mono text-sm"
+                        list="adv-booking-id-options"
+                        autoComplete="off"
                       />
+                      <datalist id="adv-booking-id-options">
+                        {advBookingIdOptions.map((id) => <option key={id} value={id} />)}
+                      </datalist>
                     </div>
                     <div>
                       <Label className="text-xs">Facility (exact match)</Label>
@@ -296,13 +312,28 @@ export default function MyBookings() {
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <Label className="text-xs">From</Label>
-                        <Input type="date" value={advFrom} onChange={(e) => setAdvFrom(e.target.value)} />
+                        <Label className="text-xs" htmlFor="adv-from">From</Label>
+                        <Input
+                          id="adv-from"
+                          type="date"
+                          value={advFrom}
+                          onChange={(e) => setAdvFrom(e.target.value)}
+                          list="adv-date-options"
+                        />
                       </div>
                       <div>
-                        <Label className="text-xs">To</Label>
-                        <Input type="date" value={advTo} onChange={(e) => setAdvTo(e.target.value)} />
+                        <Label className="text-xs" htmlFor="adv-to">To</Label>
+                        <Input
+                          id="adv-to"
+                          type="date"
+                          value={advTo}
+                          onChange={(e) => setAdvTo(e.target.value)}
+                          list="adv-date-options"
+                        />
                       </div>
+                      <datalist id="adv-date-options">
+                        {advDateOptions.map((d) => <option key={d} value={d} />)}
+                      </datalist>
                     </div>
                   </div>
                 </PopoverContent>
@@ -395,7 +426,26 @@ function BookingRow({
   const isPast = parseISO(b.booking_date) < new Date(new Date().setHours(0, 0, 0, 0));
   const displayStatus: BookingStatus =
     b.status === "paid" && isPast ? "completed" : b.status;
-  const [includeNotes, setIncludeNotes] = useState(true);
+  const [includeNotes, setIncludeNotes] = useState<boolean>(() => {
+    // 1) per-booking preference (persisted across sessions in localStorage)
+    try {
+      const stored = localStorage.getItem(`courtside:receiptNotes:${b.id}`);
+      if (stored !== null) return stored === "1";
+    } catch {}
+    // 2) last-used default for this session (sessionStorage)
+    try {
+      const last = sessionStorage.getItem("courtside:receiptNotes:lastUsed");
+      if (last !== null) return last === "1";
+    } catch {}
+    return true;
+  });
+  const updateIncludeNotes = (next: boolean) => {
+    setIncludeNotes(next);
+    try {
+      localStorage.setItem(`courtside:receiptNotes:${b.id}`, next ? "1" : "0");
+      sessionStorage.setItem("courtside:receiptNotes:lastUsed", next ? "1" : "0");
+    } catch {}
+  };
   const canShowReceipt = b.status === "paid" || b.status === "completed";
 
   return (
@@ -444,7 +494,7 @@ function BookingRow({
                 <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
                   <Checkbox
                     checked={includeNotes}
-                    onCheckedChange={(v) => setIncludeNotes(v === true)}
+                    onCheckedChange={(v) => updateIncludeNotes(v === true)}
                     className="size-3.5"
                   />
                   Include owner notes

@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { formatPHP } from "@/lib/format";
 import { LayoutDashboard, Plus, Pencil, TrendingUp, CalendarCheck2, Wallet, Download, StickyNote, Save, Loader2 } from "lucide-react";
@@ -47,6 +48,7 @@ export default function OwnerDashboard() {
   const [saving, setSaving] = useState(false);
   const [exportFrom, setExportFrom] = useState(format(subDays(new Date(), 30), "yyyy-MM-dd"));
   const [exportTo, setExportTo] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [includeNotesInCSV, setIncludeNotesInCSV] = useState(true);
 
   useEffect(() => { document.title = "Owner Dashboard · Courtside"; }, []);
 
@@ -151,7 +153,7 @@ export default function OwnerDashboard() {
     });
     const rows = filtered.map((b) => {
       const f = facilities.find((x) => x.id === b.facility_id);
-      return {
+      const base: Record<string, any> = {
         booking_id: b.id,
         facility_name: f?.name || "",
         sport_type: f?.sport_type || "",
@@ -161,8 +163,11 @@ export default function OwnerDashboard() {
         end_hour: b.end_hour,
         hours: b.end_hour - b.start_hour,
         amount_php: Number(b.total_price).toFixed(2),
-        owner_notes: (b.owner_notes || "").replace(/\s+/g, " ").trim(),
       };
+      if (includeNotesInCSV) {
+        base.owner_notes = (b.owner_notes || "").replace(/\s+/g, " ").trim();
+      }
+      return base;
     });
     downloadCSV(`bookings_${exportFrom}_to_${exportTo}.csv`, toCSV(rows));
     toast.success(`Exported ${rows.length} booking${rows.length === 1 ? "" : "s"}`);
@@ -281,9 +286,20 @@ export default function OwnerDashboard() {
               <Download className="size-4" /> Revenue CSV
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground mt-3">
-            Exports include all of your facilities. Revenue rows aggregate paid &amp; completed bookings per day.
-          </p>
+          <div className="mt-4 flex items-center justify-between flex-wrap gap-3">
+            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+              <Checkbox
+                checked={includeNotesInCSV}
+                onCheckedChange={(v) => setIncludeNotesInCSV(v === true)}
+                aria-label="Include owner notes column"
+              />
+              <StickyNote className="size-4 text-accent" />
+              <span>Include <strong className="text-foreground">owner notes</strong> column in Bookings CSV</span>
+            </label>
+            <p className="text-xs text-muted-foreground">
+              Revenue rows aggregate paid &amp; completed bookings per day.
+            </p>
+          </div>
         </div>
 
         {/* Charts */}
