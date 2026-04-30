@@ -286,13 +286,19 @@ export default function MyBookings() {
                       )}
                     </div>
                     <div>
-                      <Label className="text-xs">Booking ID (exact)</Label>
+                      <Label className="text-xs" htmlFor="adv-booking-id">Booking ID (exact)</Label>
                       <Input
+                        id="adv-booking-id"
                         value={advBookingId}
                         onChange={(e) => setAdvBookingId(e.target.value)}
                         placeholder="e.g. A1B2C3D4 or full UUID"
                         className="font-mono text-sm"
+                        list="adv-booking-id-options"
+                        autoComplete="off"
                       />
+                      <datalist id="adv-booking-id-options">
+                        {advBookingIdOptions.map((id) => <option key={id} value={id} />)}
+                      </datalist>
                     </div>
                     <div>
                       <Label className="text-xs">Facility (exact match)</Label>
@@ -306,14 +312,30 @@ export default function MyBookings() {
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <Label className="text-xs">From</Label>
-                        <Input type="date" value={advFrom} onChange={(e) => setAdvFrom(e.target.value)} />
+                        <Label className="text-xs" htmlFor="adv-from">From</Label>
+                        <Input
+                          id="adv-from"
+                          type="date"
+                          value={advFrom}
+                          onChange={(e) => setAdvFrom(e.target.value)}
+                          list="adv-date-options"
+                        />
                       </div>
                       <div>
-                        <Label className="text-xs">To</Label>
-                        <Input type="date" value={advTo} onChange={(e) => setAdvTo(e.target.value)} />
+                        <Label className="text-xs" htmlFor="adv-to">To</Label>
+                        <Input
+                          id="adv-to"
+                          type="date"
+                          value={advTo}
+                          onChange={(e) => setAdvTo(e.target.value)}
+                          list="adv-date-options"
+                        />
                       </div>
+                      <datalist id="adv-date-options">
+                        {advDateOptions.map((d) => <option key={d} value={d} />)}
+                      </datalist>
                     </div>
+                  </div>
                   </div>
                 </PopoverContent>
               </Popover>
