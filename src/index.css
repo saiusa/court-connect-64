@@ -4,62 +4,64 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Ocean Deep — sports booking design system. All colors HSL. */
+/* Court & Gym — hardwood amber on deep court-green. All colors HSL. */
 
 @layer base {
   :root {
-    --background: 210 50% 6%;
-    --foreground: 180 30% 95%;
+    /* Deep court-green base, like a polished gym floor in shadow */
+    --background: 158 32% 7%;
+    --foreground: 40 30% 95%;
 
-    --card: 210 45% 9%;
-    --card-foreground: 180 25% 95%;
+    --card: 158 28% 10%;
+    --card-foreground: 40 25% 95%;
 
-    --popover: 210 45% 9%;
-    --popover-foreground: 180 25% 95%;
+    --popover: 158 30% 9%;
+    --popover-foreground: 40 25% 95%;
 
-    /* Ocean Deep palette */
-    --primary: 186 56% 40%;            /* #2d8a9e teal */
-    --primary-foreground: 210 50% 6%;
-    --primary-glow: 178 47% 55%;       /* #5cbdb9 */
+    /* Hardwood amber — warm, energetic, gym-floor inspired */
+    --primary: 32 88% 55%;             /* #f0a23a hardwood amber */
+    --primary-foreground: 158 40% 8%;
+    --primary-glow: 38 95% 65%;        /* glowing amber */
 
-    --secondary: 210 50% 18%;          /* deep navy */
-    --secondary-foreground: 180 25% 95%;
+    --secondary: 158 28% 16%;          /* forest court green */
+    --secondary-foreground: 40 25% 95%;
 
-    --muted: 210 40% 14%;
-    --muted-foreground: 195 15% 65%;
+    --muted: 158 22% 13%;
+    --muted-foreground: 40 12% 68%;
 
-    --accent: 178 47% 55%;             /* #5cbdb9 */
-    --accent-foreground: 210 50% 6%;
+    /* Basketball / referee whistle orange accent */
+    --accent: 18 92% 58%;              /* #f37438 basketball orange */
+    --accent-foreground: 40 30% 98%;
 
-    --destructive: 0 70% 55%;
+    --destructive: 0 78% 58%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 210 40% 18%;
-    --input: 210 40% 14%;
-    --ring: 186 56% 50%;
+    --border: 158 22% 18%;
+    --input: 158 22% 14%;
+    --ring: 32 88% 60%;
 
     --radius: 0.875rem;
 
-    /* Brand gradients & shadows */
-    --gradient-hero: linear-gradient(135deg, hsl(214 60% 14%) 0%, hsl(210 70% 8%) 50%, hsl(186 56% 18%) 100%);
-    --gradient-primary: linear-gradient(135deg, hsl(186 56% 40%), hsl(178 47% 55%));
-    --gradient-card: linear-gradient(160deg, hsl(210 45% 11% / 0.9), hsl(210 50% 7% / 0.9));
-    --gradient-glow: radial-gradient(ellipse at top, hsl(178 47% 55% / 0.25), transparent 60%);
+    /* Brand gradients & shadows — sunset over a court */
+    --gradient-hero: linear-gradient(135deg, hsl(158 35% 11%) 0%, hsl(158 38% 6%) 45%, hsl(20 55% 14%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(32 88% 55%), hsl(18 92% 58%));
+    --gradient-card: linear-gradient(160deg, hsl(158 28% 12% / 0.92), hsl(158 32% 7% / 0.92));
+    --gradient-glow: radial-gradient(ellipse at top, hsl(32 88% 55% / 0.18), transparent 60%);
 
-    --shadow-glow: 0 0 60px hsl(186 56% 40% / 0.35);
-    --shadow-card: 0 20px 50px -20px hsl(210 80% 4% / 0.7);
-    --shadow-elevated: 0 30px 80px -30px hsl(186 56% 30% / 0.5);
+    --shadow-glow: 0 0 60px hsl(32 88% 55% / 0.32);
+    --shadow-card: 0 20px 50px -20px hsl(158 60% 3% / 0.75);
+    --shadow-elevated: 0 30px 80px -30px hsl(32 88% 30% / 0.45);
 
     --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 
-    --sidebar-background: 210 50% 8%;
-    --sidebar-foreground: 180 25% 90%;
-    --sidebar-primary: 186 56% 40%;
-    --sidebar-primary-foreground: 210 50% 6%;
-    --sidebar-accent: 210 40% 14%;
-    --sidebar-accent-foreground: 180 25% 90%;
-    --sidebar-border: 210 40% 18%;
-    --sidebar-ring: 186 56% 50%;
+    --sidebar-background: 158 32% 8%;
+    --sidebar-foreground: 40 25% 90%;
+    --sidebar-primary: 32 88% 55%;
+    --sidebar-primary-foreground: 158 40% 8%;
+    --sidebar-accent: 158 22% 14%;
+    --sidebar-accent-foreground: 40 25% 90%;
+    --sidebar-border: 158 22% 18%;
+    --sidebar-ring: 32 88% 60%;
   }
 }
 
