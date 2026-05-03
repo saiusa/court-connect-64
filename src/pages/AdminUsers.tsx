@@ -131,6 +131,32 @@ export default function AdminUsers() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, rolesLoading, isAdmin]);
 
+  // Realtime notification feed: toast when audit log gets new entries.
+  useEffect(() => {
+    if (!isAdmin) return;
+    const channel = supabase
+      .channel("admin-audit-feed")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "admin_audit_log" },
+        (payload) => {
+          const row = payload.new as AuditRow;
+          // Skip self-initiated actions to avoid double-toasting.
+          if (row.admin_user_id === user?.id) return;
+          const label =
+            row.action === "password_reset"
+              ? "Password reset triggered"
+              : `Role ${row.action}: ${row.role ?? ""}`;
+          toast(label, { description: "New admin action recorded" });
+          setAudit((prev) => [row, ...prev].slice(0, 200));
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin, user?.id]);
+
   const refresh = async () => {
     setLoading(true);
     const [{ data: profs, error: pErr }, { data: rs, error: rErr }, { data: au, error: aErr }] =
