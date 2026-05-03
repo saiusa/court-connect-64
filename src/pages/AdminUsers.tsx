@@ -28,6 +28,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { downloadCSV, toCSV } from "@/lib/csv";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   ShieldCheck,
   ShieldAlert,
@@ -42,6 +50,7 @@ import {
   ArrowUpDown,
   KeyRound,
   History,
+  Download,
 } from "lucide-react";
 
 type Role = "admin" | "owner" | "user";
@@ -92,6 +101,11 @@ export default function AdminUsers() {
   const [sortKey, setSortKey] = useState<SortKey>("joined");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [showAudit, setShowAudit] = useState(false);
+  const [auditSearch, setAuditSearch] = useState("");
+  const [auditAction, setAuditAction] = useState<"all" | "grant" | "revoke" | "password_reset">("all");
+  const [auditFrom, setAuditFrom] = useState("");
+  const [auditTo, setAuditTo] = useState("");
+  const [auditSortDir, setAuditSortDir] = useState<SortDir>("desc");
   const [confirm, setConfirm] = useState<
     | { kind: "grant"; userId: string; role: Role; name: string }
     | { kind: "revoke"; userId: string; role: Role; name: string }
@@ -116,6 +130,32 @@ export default function AdminUsers() {
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, rolesLoading, isAdmin]);
+
+  // Realtime notification feed: toast when audit log gets new entries.
+  useEffect(() => {
+    if (!isAdmin) return;
+    const channel = supabase
+      .channel("admin-audit-feed")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "admin_audit_log" },
+        (payload) => {
+          const row = payload.new as AuditRow;
+          // Skip self-initiated actions to avoid double-toasting.
+          if (row.admin_user_id === user?.id) return;
+          const label =
+            row.action === "password_reset"
+              ? "Password reset triggered"
+              : `Role ${row.action}: ${row.role ?? ""}`;
+          toast(label, { description: "New admin action recorded" });
+          setAudit((prev) => [row, ...prev].slice(0, 200));
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin, user?.id]);
 
   const refresh = async () => {
     setLoading(true);
@@ -411,30 +451,138 @@ export default function AdminUsers() {
         </div>
 
         {/* Audit log panel */}
-        {showAudit && (
+        {showAudit && (() => {
+          const filteredAudit = audit.filter((a) => {
+            if (auditAction !== "all" && a.action !== auditAction) return false;
+            if (auditFrom && a.created_at < auditFrom) return false;
+            if (auditTo && a.created_at > `${auditTo}T23:59:59`) return false;
+            const q = auditSearch.trim().toLowerCase();
+            if (q) {
+              const adminName = profileById.get(a.admin_user_id)?.display_name || "";
+              const targetName = profileById.get(a.target_user_id)?.display_name || "";
+              const hay = [
+                adminName,
+                targetName,
+                a.admin_user_id,
+                a.target_user_id,
+                a.role ?? "",
+                a.action,
+              ]
+                .join(" ")
+                .toLowerCase();
+              if (!hay.includes(q)) return false;
+            }
+            return true;
+          });
+          const sortedAudit = [...filteredAudit].sort((a, b) => {
+            const cmp = a.created_at.localeCompare(b.created_at);
+            return auditSortDir === "asc" ? cmp : -cmp;
+          });
+          const exportAudit = () => {
+            const rows = sortedAudit.map((a) => ({
+              timestamp: a.created_at,
+              action: a.action,
+              role: a.role ?? "",
+              admin_id: a.admin_user_id,
+              admin_name: profileById.get(a.admin_user_id)?.display_name ?? "",
+              target_id: a.target_user_id,
+              target_name: profileById.get(a.target_user_id)?.display_name ?? "",
+            }));
+            downloadCSV(
+              `admin-audit-${new Date().toISOString().slice(0, 10)}.csv`,
+              toCSV(rows, [
+                "timestamp",
+                "action",
+                "role",
+                "admin_id",
+                "admin_name",
+                "target_id",
+                "target_name",
+              ]),
+            );
+            toast.success(`Exported ${rows.length} audit ${rows.length === 1 ? "entry" : "entries"}`);
+          };
+          return (
           <section className="bg-card-gradient border border-border rounded-2xl p-5 shadow-card mb-8">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
               <History className="size-4 text-primary" />
               <h2 className="font-display text-2xl tracking-wider">Recent admin actions</h2>
-              <span className="text-xs text-muted-foreground ml-auto">
-                Last {audit.length} entries
+              <span className="text-xs text-muted-foreground">
+                Showing {sortedAudit.length} of last {audit.length}
               </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportAudit}
+                disabled={sortedAudit.length === 0}
+                className="ml-auto"
+              >
+                <Download className="size-4" /> Export CSV
+              </Button>
             </div>
-            {audit.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No admin actions yet.</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+              <div className="relative md:col-span-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={auditSearch}
+                  onChange={(e) => setAuditSearch(e.target.value)}
+                  placeholder="Search admin or target name / ID…"
+                  className="pl-9"
+                  aria-label="Search audit entries"
+                />
+              </div>
+              <Select value={auditAction} onValueChange={(v) => setAuditAction(v as typeof auditAction)}>
+                <SelectTrigger aria-label="Filter by action">
+                  <SelectValue placeholder="Action" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All actions</SelectItem>
+                  <SelectItem value="grant">Grant</SelectItem>
+                  <SelectItem value="revoke">Revoke</SelectItem>
+                  <SelectItem value="password_reset">Password reset</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex gap-2">
+                <Input
+                  type="date"
+                  value={auditFrom}
+                  onChange={(e) => setAuditFrom(e.target.value)}
+                  aria-label="From date"
+                />
+                <Input
+                  type="date"
+                  value={auditTo}
+                  onChange={(e) => setAuditTo(e.target.value)}
+                  aria-label="To date"
+                />
+              </div>
+            </div>
+
+            {sortedAudit.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                No audit entries match your filters.
+              </p>
             ) : (
               <div className="overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>When</TableHead>
+                      <TableHead>
+                        <button
+                          onClick={() => setAuditSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+                          className="flex items-center gap-1.5 text-xs uppercase tracking-widest font-bold hover:text-foreground transition-colors"
+                        >
+                          When {auditSortDir === "asc" ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />}
+                        </button>
+                      </TableHead>
                       <TableHead>Admin</TableHead>
                       <TableHead>Action</TableHead>
                       <TableHead>Target</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {audit.map((a) => {
+                    {sortedAudit.map((a) => {
                       const adminName =
                         profileById.get(a.admin_user_id)?.display_name ||
                         a.admin_user_id.slice(0, 8).toUpperCase();
@@ -471,12 +619,14 @@ export default function AdminUsers() {
               </div>
             )}
           </section>
-        )}
+          );
+        })()}
 
         {/* User table */}
         {filtered.length === 0 ? (
-          <div className="bg-card-gradient border border-border rounded-2xl p-10 text-center text-muted-foreground">
-            No users match your filters.
+          <div className="empty-court bg-card-gradient border border-border rounded-2xl p-12 text-center">
+            <Users className="size-10 text-primary/60 mx-auto mb-3" />
+            <p className="text-muted-foreground">No users match your filters.</p>
           </div>
         ) : (
           <div className="bg-card-gradient border border-border rounded-2xl shadow-card overflow-hidden">
