@@ -101,6 +101,11 @@ export default function AdminUsers() {
   const [sortKey, setSortKey] = useState<SortKey>("joined");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [showAudit, setShowAudit] = useState(false);
+  const [auditSearch, setAuditSearch] = useState("");
+  const [auditAction, setAuditAction] = useState<"all" | "grant" | "revoke" | "password_reset">("all");
+  const [auditFrom, setAuditFrom] = useState("");
+  const [auditTo, setAuditTo] = useState("");
+  const [auditSortDir, setAuditSortDir] = useState<SortDir>("desc");
   const [confirm, setConfirm] = useState<
     | { kind: "grant"; userId: string; role: Role; name: string }
     | { kind: "revoke"; userId: string; role: Role; name: string }
