@@ -619,7 +619,8 @@ export default function AdminUsers() {
               </div>
             )}
           </section>
-        )}
+          );
+        })()}
 
         {/* User table */}
         {filtered.length === 0 ? (
