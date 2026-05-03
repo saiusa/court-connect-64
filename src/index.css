@@ -90,19 +90,31 @@
     @apply bg-clip-text text-transparent;
     background-image: var(--gradient-primary);
   }
-  .bg-hero {
-    background-image: var(--gradient-hero);
+  .bg-hero { background-image: var(--gradient-hero); }
+  .bg-card-gradient { background-image: var(--gradient-card); }
+  .shadow-glow { box-shadow: var(--shadow-glow); }
+  .shadow-card { box-shadow: var(--shadow-card); }
+  .shadow-elevated { box-shadow: var(--shadow-elevated); }
+
+  /* Court-themed empty-state backdrop: faint hardwood lines + amber glow */
+  .empty-court {
+    background-image:
+      radial-gradient(ellipse at top, hsl(var(--primary) / 0.10), transparent 60%),
+      repeating-linear-gradient(
+        90deg,
+        hsl(var(--primary) / 0.05) 0 1px,
+        transparent 1px 56px
+      );
   }
-  .bg-card-gradient {
-    background-image: var(--gradient-card);
+}
+
+@layer base {
+  /* Court & Gym button polish: subtle lift on hover, press on active */
+  .btn-court {
+    transition: transform 150ms var(--transition-smooth),
+                box-shadow 200ms var(--transition-smooth),
+                background-color 150ms var(--transition-smooth);
   }
-  .shadow-glow {
-    box-shadow: var(--shadow-glow);
-  }
-  .shadow-card {
-    box-shadow: var(--shadow-card);
-  }
-  .shadow-elevated {
-    box-shadow: var(--shadow-elevated);
-  }
+  .btn-court:hover { box-shadow: var(--shadow-glow); transform: translateY(-1px); }
+  .btn-court:active { transform: translateY(0); }
 }
