@@ -624,8 +624,9 @@ export default function AdminUsers() {
 
         {/* User table */}
         {filtered.length === 0 ? (
-          <div className="bg-card-gradient border border-border rounded-2xl p-10 text-center text-muted-foreground">
-            No users match your filters.
+          <div className="empty-court bg-card-gradient border border-border rounded-2xl p-12 text-center">
+            <Users className="size-10 text-primary/60 mx-auto mb-3" />
+            <p className="text-muted-foreground">No users match your filters.</p>
           </div>
         ) : (
           <div className="bg-card-gradient border border-border rounded-2xl shadow-card overflow-hidden">
