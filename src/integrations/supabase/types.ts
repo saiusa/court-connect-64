@@ -184,6 +184,63 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_applications: {
+        Row: {
+          business_name: string
+          checklist: Json
+          contact_email: string
+          contact_name: string
+          contact_phone: string
+          created_at: string
+          description: string | null
+          facility_type: string
+          id: string
+          location: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          status: Database["public"]["Enums"]["partner_app_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_name: string
+          checklist?: Json
+          contact_email: string
+          contact_name: string
+          contact_phone: string
+          created_at?: string
+          description?: string | null
+          facility_type: string
+          id?: string
+          location: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: Database["public"]["Enums"]["partner_app_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_name?: string
+          checklist?: Json
+          contact_email?: string
+          contact_name?: string
+          contact_phone?: string
+          created_at?: string
+          description?: string | null
+          facility_type?: string
+          id?: string
+          location?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: Database["public"]["Enums"]["partner_app_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -281,6 +338,10 @@ export type Database = {
         Args: { _target_user_id: string }
         Returns: undefined
       }
+      admin_review_partner_application: {
+        Args: { _application_id: string; _approve: boolean; _notes?: string }
+        Returns: undefined
+      }
       admin_revoke_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -299,6 +360,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "owner" | "user"
       booking_status: "pending" | "paid" | "cancelled" | "completed"
+      partner_app_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -428,6 +490,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "owner", "user"],
       booking_status: ["pending", "paid", "cancelled", "completed"],
+      partner_app_status: ["pending", "approved", "rejected"],
     },
   },
 } as const
