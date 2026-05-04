@@ -84,7 +84,16 @@ export default function PartnerOnboarding() {
     setSubmitting(true);
     const { data, error } = await supabase
       .from("partner_applications")
-      .insert({ ...parsed.data, user_id: user.id })
+      .insert({
+        business_name: parsed.data.business_name,
+        contact_name: parsed.data.contact_name,
+        contact_email: parsed.data.contact_email,
+        contact_phone: parsed.data.contact_phone,
+        facility_type: parsed.data.facility_type,
+        location: parsed.data.location,
+        description: parsed.data.description || null,
+        user_id: user.id,
+      })
       .select()
       .single();
     setSubmitting(false);
