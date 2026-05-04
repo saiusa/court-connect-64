@@ -51,6 +51,8 @@ export function Navbar() {
     { to: "/my-bookings", label: "My Bookings", icon: CalendarCheck, show: !!user },
     { to: "/reminders", label: "Reminders", icon: Bell, show: !!user },
     { to: "/owner", label: "Dashboard", icon: LayoutDashboard, show: !!user && isOwner },
+    { to: "/partner", label: "Partner", icon: Handshake, show: !!user && !isOwner },
+    { to: "/admin/partners", label: "Partners", icon: Handshake, show: !!user && isAdmin },
     { to: "/admin/users", label: "Admin", icon: ShieldCheck, show: !!user && isAdmin },
   ];
 
