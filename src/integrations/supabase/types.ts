@@ -44,6 +44,27 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       booking_series: {
         Row: {
           created_at: string
@@ -86,11 +107,14 @@ export type Database = {
       bookings: {
         Row: {
           booking_date: string
+          commission_amount: number
+          commission_rate: number
           created_at: string
           end_hour: number
           facility_id: string
           id: string
           owner_notes: string | null
+          owner_payout: number
           paid_at: string | null
           payment_ref: string | null
           series_id: string | null
@@ -101,11 +125,14 @@ export type Database = {
         }
         Insert: {
           booking_date: string
+          commission_amount?: number
+          commission_rate?: number
           created_at?: string
           end_hour: number
           facility_id: string
           id?: string
           owner_notes?: string | null
+          owner_payout?: number
           paid_at?: string | null
           payment_ref?: string | null
           series_id?: string | null
@@ -116,11 +143,14 @@ export type Database = {
         }
         Update: {
           booking_date?: string
+          commission_amount?: number
+          commission_rate?: number
           created_at?: string
           end_hour?: number
           facility_id?: string
           id?: string
           owner_notes?: string | null
+          owner_payout?: number
           paid_at?: string | null
           payment_ref?: string | null
           series_id?: string | null
