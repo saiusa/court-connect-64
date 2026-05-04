@@ -22,7 +22,7 @@ import {
   ShieldCheck,
   Handshake,
 } from "lucide-react";
-import courtsideLogo from "@/assets/courtside-logo.png";
+import { CourtsideLogo } from "@/components/CourtsideLogo";
 
 interface NavItem {
   to: string;
@@ -68,16 +68,7 @@ export function Navbar() {
             isHome ? "ring-1 ring-accent/40" : ""
           }`}
         >
-          <img
-            src={courtsideLogo}
-            alt="Courtside"
-            width={160}
-            height={40}
-            decoding="async"
-            loading="eager"
-            className="h-9 sm:h-10 w-auto group-hover:scale-105 transition-transform dark:brightness-0 dark:invert"
-            style={{ imageRendering: "auto" }}
-          />
+          <CourtsideLogo className="group-hover:scale-105 transition-transform text-foreground" />
         </Link>
 
         {/* Desktop nav */}

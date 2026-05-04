@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { FacilityCard } from "@/components/FacilityCard";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { useRoles } from "@/hooks/useRole";
 
 interface Facility {
   id: string;
@@ -20,10 +22,15 @@ interface Facility {
 const SPORTS = ["All", "Basketball", "Badminton", "Gym", "Soccer", "Tennis"];
 
 export default function Facilities() {
+  const { isAdmin, isOwner, loading: rolesLoading } = useRoles();
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
+
+  // Strict Role-Based Access Control
+  if (!rolesLoading && isAdmin) return <Navigate to="/admin/users" replace />;
+  if (!rolesLoading && !isAdmin && isOwner) return <Navigate to="/owner" replace />;
 
   useEffect(() => {
     document.title = "Facilities · Courtside";

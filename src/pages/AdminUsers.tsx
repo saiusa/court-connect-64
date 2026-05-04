@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link, Navigate } from "react-router-dom";
 import { format, parseISO, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseAdmin } from "@/integrations/supabase/admin-client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoles } from "@/hooks/useRole";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
+import { CourtsideLogo } from "@/components/CourtsideLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +51,7 @@ import {
   KeyRound,
   History,
   Download,
+  LogOut,
 } from "lucide-react";
 
 type Role = "admin" | "owner" | "user";
@@ -88,8 +89,8 @@ const ROLE_BADGE: Record<Role, string> = {
 const ROLE_RANK: Record<Role | "none", number> = { admin: 3, owner: 2, user: 1, none: 0 };
 
 export default function AdminUsers() {
-  const { user, loading: authLoading } = useAuth();
-  const { isAdmin, loading: rolesLoading } = useRoles();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { isAdmin, isOwner, loading: rolesLoading } = useRoles();
   const navigate = useNavigate();
 
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
@@ -161,12 +162,12 @@ export default function AdminUsers() {
     setLoading(true);
     const [{ data: profs, error: pErr }, { data: rs, error: rErr }, { data: au, error: aErr }] =
       await Promise.all([
-        supabase
+        supabaseAdmin
           .from("profiles")
           .select("id,display_name,phone,created_at")
           .order("created_at", { ascending: false }),
-        supabase.from("user_roles").select("user_id,role"),
-        supabase
+        supabaseAdmin.from("user_roles").select("user_id,role"),
+        supabaseAdmin
           .from("admin_audit_log" as any)
           .select("id,admin_user_id,target_user_id,action,role,created_at")
           .order("created_at", { ascending: false })
@@ -328,56 +329,73 @@ export default function AdminUsers() {
     refresh();
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
   if (authLoading || rolesLoading || loading) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-1 container py-20 text-center text-muted-foreground">Loading admin…</main>
-        <Footer />
+      <div className="min-h-screen flex flex-col bg-[#0a0a0c]">
+        <main className="flex-1 container py-20 text-center text-muted-foreground flex items-center justify-center">
+          Loading admin…
+        </main>
       </div>
     );
   }
 
   if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-1 container py-20 max-w-2xl text-center">
-          <ShieldAlert className="size-12 text-destructive mx-auto mb-4" />
-          <h1 className="font-display text-4xl tracking-wider mb-3">Admin access required</h1>
-          <p className="text-muted-foreground mb-6">
-            This area is restricted to platform administrators. If you believe this is a mistake,
-            contact an existing admin to grant your account the role.
-          </p>
-          <Button onClick={() => navigate("/")}>Back to home</Button>
-        </main>
-        <Footer />
-      </div>
-    );
+    if (isOwner) return <Navigate to="/owner" replace />;
+    return <Navigate to="/" replace />;
   }
 
   const lastAdminGuard = (targetId: string) =>
     adminCount <= 1 && rolesByUser.get(targetId)?.has("admin");
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1 container py-12">
-        <div className="flex items-end justify-between flex-wrap gap-4 mb-8">
+    <div className="min-h-screen flex flex-col relative bg-[#0a0a0c]">
+      {/* Admin specific background effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-background to-transparent opacity-60" />
+        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-primary/5 blur-[120px] rounded-full" />
+      </div>
+
+      {/* Distinct Admin Header, completely disconnected from user Navbar */}
+      <header className="sticky top-0 z-50 bg-[#0a0a0c]/80 backdrop-blur-xl border-b border-primary/20 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <Link to="/admin/users" className="flex items-center gap-3">
+            <CourtsideLogo size="sm" className="text-foreground" />
+            <span className="text-xs font-bold uppercase tracking-widest text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded">Admin</span>
+          </Link>
+          <nav className="hidden md:flex items-center gap-6">
+            <Link to="/admin/users" className="text-sm font-bold uppercase tracking-wider text-primary border-b-2 border-primary pb-1">Users</Link>
+            <Link to="/admin/partners" className="text-sm font-bold uppercase tracking-wider text-muted-foreground hover:text-white transition-colors">Partners</Link>
+          </nav>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleSignOut} className="border-primary/40 text-primary hover:bg-primary/10 hover:text-primary">
+          <LogOut className="size-4 mr-2" /> Sign Out
+        </Button>
+      </header>
+
+      <main className="flex-1 container py-12 relative z-10">
+        <div className="flex items-end justify-between flex-wrap gap-4 mb-10 pb-6 border-b border-primary/20">
           <div>
-            <span className="text-xs uppercase tracking-widest text-primary font-bold flex items-center gap-1.5">
-              <ShieldCheck className="size-3.5" /> Admin
-            </span>
-            <h1 className="font-display text-5xl md:text-6xl tracking-wider mt-1">
-              Users &amp; Roles
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary/10 border border-primary/30 mb-4 shadow-[0_0_15px_rgba(var(--primary),0.2)]">
+              <ShieldCheck className="size-4 text-primary" />
+              <span className="text-xs uppercase tracking-widest text-primary font-bold">
+                System Control
+              </span>
+            </div>
+            <h1 className="font-display text-5xl md:text-6xl tracking-wider text-white shadow-black drop-shadow-md">
+              ADMIN <span className="text-primary/80">CENTER</span>
             </h1>
-            <p className="text-muted-foreground mt-2">
+            <p className="text-muted-foreground mt-3 max-w-2xl text-lg">
               Manage who can sign in, run facilities, or administer the platform. All role changes
               are server-validated and recorded in the audit log.
             </p>
           </div>
-          <Button variant="outline" onClick={() => setShowAudit((v) => !v)}>
-            <History className="size-4" />
+          <Button variant="outline" size="lg" className="border-primary/40 hover:bg-primary/10 hover:text-primary transition-all shadow-[0_0_10px_rgba(var(--primary),0.1)]" onClick={() => setShowAudit((v) => !v)}>
+            <History className="size-5 mr-2" />
             {showAudit ? "Hide audit log" : "View audit log"}
           </Button>
         </div>
@@ -417,35 +435,35 @@ export default function AdminUsers() {
         </div>
 
         {/* Search + active filter chip */}
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <div className="relative max-w-md flex-1 min-w-[240px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+        <div className="flex flex-wrap items-center gap-3 mb-8 bg-black/40 p-4 rounded-xl border border-white/5 backdrop-blur-md">
+          <div className="relative flex-1 min-w-[240px]">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground pointer-events-none" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, phone, or user ID…"
-              className="pl-9 pr-9"
+              className="pl-12 pr-10 h-12 bg-white/5 border-white/10 text-lg focus-visible:ring-primary/50"
               aria-label="Search users"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => setSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
                 aria-label="Clear search"
               >
-                <XCircle className="size-4" />
+                <XCircle className="size-5" />
               </button>
             )}
           </div>
           {roleFilter !== "all" && (
             <Badge
               variant="outline"
-              className="gap-1.5 cursor-pointer"
+              className="h-12 px-4 gap-2 cursor-pointer border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 transition-colors text-sm"
               onClick={() => setRoleFilter("all")}
             >
-              Filter: {roleFilter}
-              <XCircle className="size-3" />
+              Filter: <span className="uppercase tracking-widest">{roleFilter}</span>
+              <XCircle className="size-4 ml-1 opacity-70" />
             </Badge>
           )}
         </div>
@@ -848,8 +866,6 @@ export default function AdminUsers() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <Footer />
     </div>
   );
 }

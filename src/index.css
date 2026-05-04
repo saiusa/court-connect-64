@@ -4,64 +4,64 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Court & Gym — hardwood amber on deep court-green. All colors HSL. */
+/* CourtSide — professional blue on deep dark base. All colors HSL. */
 
 @layer base {
   :root {
-    /* Deep court-green base, like a polished gym floor in shadow */
-    --background: 158 32% 7%;
-    --foreground: 40 30% 95%;
+    /* Deep dark base */
+    --background: 220 25% 7%;
+    --foreground: 210 20% 95%;
 
-    --card: 158 28% 10%;
-    --card-foreground: 40 25% 95%;
+    --card: 220 22% 10%;
+    --card-foreground: 210 20% 95%;
 
-    --popover: 158 30% 9%;
-    --popover-foreground: 40 25% 95%;
+    --popover: 220 24% 9%;
+    --popover-foreground: 210 20% 95%;
 
-    /* Hardwood amber — warm, energetic, gym-floor inspired */
-    --primary: 32 88% 55%;             /* #f0a23a hardwood amber */
-    --primary-foreground: 158 40% 8%;
-    --primary-glow: 38 95% 65%;        /* glowing amber */
+    /* Logo-matched steel blue primary */
+    --primary: 210 59% 38%;             /* #28619a — matches logo */
+    --primary-foreground: 210 20% 98%;
+    --primary-glow: 210 65% 50%;        /* lighter glow */
 
-    --secondary: 158 28% 16%;          /* forest court green */
-    --secondary-foreground: 40 25% 95%;
+    --secondary: 210 22% 16%;
+    --secondary-foreground: 210 20% 95%;
 
-    --muted: 158 22% 13%;
-    --muted-foreground: 40 12% 68%;
+    --muted: 210 18% 13%;
+    --muted-foreground: 210 12% 68%;
 
-    /* Basketball / referee whistle orange accent */
-    --accent: 18 92% 58%;              /* #f37438 basketball orange */
-    --accent-foreground: 40 30% 98%;
+    /* Lighter logo blue accent */
+    --accent: 210 55% 48%;              /* lighter logo blue */
+    --accent-foreground: 210 25% 98%;
 
     --destructive: 0 78% 58%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 158 22% 18%;
-    --input: 158 22% 14%;
-    --ring: 32 88% 60%;
+    --border: 210 18% 18%;
+    --input: 210 18% 14%;
+    --ring: 210 59% 45%;
 
     --radius: 0.875rem;
 
-    /* Brand gradients & shadows — sunset over a court */
-    --gradient-hero: linear-gradient(135deg, hsl(158 35% 11%) 0%, hsl(158 38% 6%) 45%, hsl(20 55% 14%) 100%);
-    --gradient-primary: linear-gradient(135deg, hsl(32 88% 55%), hsl(18 92% 58%));
-    --gradient-card: linear-gradient(160deg, hsl(158 28% 12% / 0.92), hsl(158 32% 7% / 0.92));
-    --gradient-glow: radial-gradient(ellipse at top, hsl(32 88% 55% / 0.18), transparent 60%);
+    /* Brand gradients & shadows — logo blue depth */
+    --gradient-hero: linear-gradient(135deg, hsl(210 30% 11%) 0%, hsl(210 35% 6%) 45%, hsl(210 50% 14%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(210 59% 38%), hsl(210 55% 48%));
+    --gradient-card: linear-gradient(160deg, hsl(210 22% 12% / 0.92), hsl(210 25% 7% / 0.92));
+    --gradient-glow: radial-gradient(ellipse at top, hsl(210 59% 38% / 0.18), transparent 60%);
 
-    --shadow-glow: 0 0 60px hsl(32 88% 55% / 0.32);
-    --shadow-card: 0 20px 50px -20px hsl(158 60% 3% / 0.75);
-    --shadow-elevated: 0 30px 80px -30px hsl(32 88% 30% / 0.45);
+    --shadow-glow: 0 0 60px hsl(210 59% 38% / 0.32);
+    --shadow-card: 0 20px 50px -20px hsl(210 50% 3% / 0.75);
+    --shadow-elevated: 0 30px 80px -30px hsl(210 59% 30% / 0.45);
 
     --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 
-    --sidebar-background: 158 32% 8%;
-    --sidebar-foreground: 40 25% 90%;
-    --sidebar-primary: 32 88% 55%;
-    --sidebar-primary-foreground: 158 40% 8%;
-    --sidebar-accent: 158 22% 14%;
-    --sidebar-accent-foreground: 40 25% 90%;
-    --sidebar-border: 158 22% 18%;
-    --sidebar-ring: 32 88% 60%;
+    --sidebar-background: 210 25% 8%;
+    --sidebar-foreground: 210 20% 90%;
+    --sidebar-primary: 210 59% 38%;
+    --sidebar-primary-foreground: 210 20% 98%;
+    --sidebar-accent: 210 18% 14%;
+    --sidebar-accent-foreground: 210 20% 90%;
+    --sidebar-border: 210 18% 18%;
+    --sidebar-ring: 210 59% 45%;
   }
 }
 

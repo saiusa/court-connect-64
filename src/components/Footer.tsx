@@ -1,4 +1,4 @@
-import { Trophy } from "lucide-react";
+import { CourtsideLogo } from "@/components/CourtsideLogo";
 
 export function Footer() {
   return (
@@ -6,10 +6,7 @@ export function Footer() {
       <div className="container py-12 grid md:grid-cols-3 gap-8">
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <div className="size-8 rounded-lg bg-gradient-to-br from-primary to-accent grid place-items-center">
-              <Trophy className="size-4 text-primary-foreground" />
-            </div>
-            <span className="font-display text-xl tracking-widest">COURTSIDE</span>
+            <CourtsideLogo size="sm" className="text-foreground" />
           </div>
           <p className="text-sm text-muted-foreground max-w-xs">
             Book local sports facilities in seconds. Courts, pitches, gyms — all in one place.

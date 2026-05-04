@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { FacilityCard } from "@/components/FacilityCard";
 import { Button } from "@/components/ui/button";
 import heroImg from "@/assets/hero.jpg";
-import { Calendar, Users, Zap, Shield, ArrowRight, MapPin } from "lucide-react";
+import { Calendar, Users, Zap, Shield, ArrowRight, MapPin, LayoutDashboard, ShieldCheck } from "lucide-react";
+import { useRoles } from "@/hooks/useRole";
 
 interface Facility {
   id: string; name: string; sport_type: string; location: string;
@@ -15,19 +16,34 @@ interface Facility {
 
 export default function Index() {
   const [facilities, setFacilities] = useState<Facility[]>([]);
+  const { isAdmin, isOwner, loading: rolesLoading } = useRoles();
 
   useEffect(() => {
     document.title = "Courtside · Book Local Sports Facilities";
-    supabase.from("facilities").select("*").limit(6).then(({ data }) => {
-      setFacilities((data as Facility[]) || []);
-    });
+    supabase
+      .from("facilities")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(6)
+      .then(({ data }) => {
+        setFacilities((data as Facility[]) || []);
+      });
   }, []);
+
+  // Strict Role-Based Access Control
+  if (!rolesLoading && isAdmin) {
+    return <Navigate to="/admin/users" replace />;
+  }
+  
+  if (!rolesLoading && !isAdmin && isOwner) {
+    return <Navigate to="/owner" replace />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      {/* HERO */}
+      {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10">
           <img src={heroImg} alt="" className="w-full h-full object-cover opacity-30" width={1600} height={1000} />
@@ -85,18 +101,24 @@ export default function Index() {
           </Button>
         </div>
 
-        {facilities.length >= 6 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-4 md:h-[700px]">
-            <FacilityCard {...facilities[0]} className="md:col-span-2 md:row-span-2" />
-            <FacilityCard {...facilities[1]} />
-            <FacilityCard {...facilities[2]} />
-          </div>
-        )}
-        {facilities.length >= 6 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-            <FacilityCard {...facilities[3]} />
-            <FacilityCard {...facilities[4]} />
-            <FacilityCard {...facilities[5]} />
+        {facilities.length >= 6 ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-4 md:h-[700px]">
+              <FacilityCard {...facilities[0]} className="md:col-span-2 md:row-span-2" />
+              <FacilityCard {...facilities[1]} />
+              <FacilityCard {...facilities[2]} />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+              <FacilityCard {...facilities[3]} />
+              <FacilityCard {...facilities[4]} />
+              <FacilityCard {...facilities[5]} />
+            </div>
+          </>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {facilities.map((f) => (
+              <FacilityCard key={f.id} {...f} />
+            ))}
           </div>
         )}
       </section>

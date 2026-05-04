@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 type Role = "admin" | "owner" | "user";
@@ -7,29 +6,27 @@ type Role = "admin" | "owner" | "user";
 export function useRoles() {
   const { user, loading: authLoading } = useAuth();
   const [roles, setRoles] = useState<Role[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
       setRoles([]);
-      setLoading(false);
+      setIsFetching(false);
       return;
     }
-    supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .then(({ data }) => {
-        setRoles((data || []).map((r: any) => r.role as Role));
-        setLoading(false);
-      });
+    
+    // Read roles directly from app_metadata instead of fetching from DB
+    // This avoids the 'permission denied for function has_role' RLS issue
+    const userRoles = user.app_metadata?.roles || [];
+    setRoles(userRoles);
+    setIsFetching(false);
   }, [user, authLoading]);
 
   return {
     roles,
-    loading,
+    loading: authLoading || isFetching,
     isAdmin: roles.includes("admin"),
-    isOwner: roles.includes("owner") || roles.includes("admin"),
+    isOwner: roles.includes("owner") && !roles.includes("admin"),
   };
 }

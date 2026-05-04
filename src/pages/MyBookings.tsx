@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { format, parseISO } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRoles } from "@/hooks/useRole";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,7 @@ const FILTERS: { value: FilterStatus; label: string }[] = [
 
 export default function MyBookings() {
   const { user, loading: authLoading } = useAuth();
+  const { isAdmin, isOwner, loading: rolesLoading } = useRoles();
   const navigate = useNavigate();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +66,10 @@ export default function MyBookings() {
   const [advFacility, setAdvFacility] = useState("__any__");
   const [advFrom, setAdvFrom] = useState("");
   const [advTo, setAdvTo] = useState("");
+
+  // Strict Role-Based Access Control
+  if (!rolesLoading && isAdmin) return <Navigate to="/admin/users" replace />;
+  if (!rolesLoading && !isAdmin && isOwner) return <Navigate to="/owner" replace />;
 
   useEffect(() => { document.title = "My Bookings · Courtside"; }, []);
 

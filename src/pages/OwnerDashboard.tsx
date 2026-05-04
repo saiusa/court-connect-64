@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link, Navigate } from "react-router-dom";
 import { format, parseISO, subDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoles } from "@/hooks/useRole";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
+import { CourtsideLogo } from "@/components/CourtsideLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { formatPHP } from "@/lib/format";
-import { LayoutDashboard, Plus, Pencil, TrendingUp, CalendarCheck2, Wallet, Download, StickyNote, Save, Loader2 } from "lucide-react";
+import { LayoutDashboard, Plus, Pencil, TrendingUp, CalendarCheck2, Wallet, Download, StickyNote, Save, Loader2, LogOut } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { toCSV, downloadCSV } from "@/lib/csv";
 
@@ -37,8 +36,8 @@ const emptyForm: Partial<Facility> = {
 };
 
 export default function OwnerDashboard() {
-  const { user, loading: authLoading } = useAuth();
-  const { isOwner, loading: rolesLoading } = useRoles();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { isOwner, isAdmin, loading: rolesLoading } = useRoles();
   const navigate = useNavigate();
 
   const [facilities, setFacilities] = useState<Facility[]>([]);
@@ -216,43 +215,66 @@ export default function OwnerDashboard() {
     toast.success(`Exported ${rows.length} revenue row${rows.length === 1 ? "" : "s"}`);
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
   if (loading || authLoading || rolesLoading) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar /><main className="flex-1 container py-20 text-center text-muted-foreground">Loading dashboard…</main><Footer />
+      <div className="min-h-screen flex flex-col bg-[#06080f]">
+        <main className="flex-1 container py-20 text-center text-muted-foreground flex items-center justify-center">Loading dashboard…</main>
       </div>
     );
   }
 
   if (!isOwner) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-1 container py-20 max-w-2xl text-center">
-          <LayoutDashboard className="size-12 text-accent mx-auto mb-4" />
-          <h1 className="font-display text-4xl tracking-wider mb-3">Owner access required</h1>
-          <p className="text-muted-foreground mb-6">
-            Your account isn't a registered facility owner yet. Owners are approved by an admin — once promoted, this dashboard unlocks instantly.
-          </p>
-          <Button onClick={() => navigate("/")}>Back to home</Button>
-        </main>
-        <Footer />
-      </div>
-    );
+    if (isAdmin) return <Navigate to="/admin/users" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1 container py-12">
-        <div className="flex items-end justify-between flex-wrap gap-4 mb-8">
+    <div className="min-h-screen flex flex-col relative bg-[#06080f]">
+      {/* Owner specific background effects - deep corporate blues */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-[800px] h-[500px] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/20 via-background to-transparent opacity-60" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-500/5 blur-[120px] rounded-full" />
+      </div>
+
+      {/* Distinct Owner Header, completely disconnected from user Navbar */}
+      <header className="sticky top-0 z-50 bg-[#06080f]/80 backdrop-blur-xl border-b border-blue-900/30 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <Link to="/owner" className="flex items-center gap-3">
+            <CourtsideLogo size="sm" className="text-foreground" />
+            <span className="text-xs font-bold uppercase tracking-widest text-blue-400 bg-blue-500/10 border border-blue-500/30 px-2 py-0.5 rounded">Partner</span>
+          </Link>
+          <nav className="hidden md:flex items-center gap-6">
+            <Link to="/owner" className="text-sm font-bold uppercase tracking-wider text-blue-400 border-b-2 border-blue-400 pb-1">Dashboard</Link>
+          </nav>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleSignOut} className="border-blue-500/40 text-blue-400 hover:bg-blue-500/10 hover:text-blue-400">
+          <LogOut className="size-4 mr-2" /> Sign Out
+        </Button>
+      </header>
+
+      <main className="flex-1 container py-12 relative z-10">
+        <div className="flex items-end justify-between flex-wrap gap-4 mb-10 pb-6 border-b border-blue-900/30">
           <div>
-            <span className="text-xs uppercase tracking-widest text-accent font-bold">Owner</span>
-            <h1 className="font-display text-5xl md:text-6xl tracking-wider mt-1">Dashboard</h1>
-            <p className="text-muted-foreground mt-2">Manage your Butuan City venues, hours, pricing and revenue.</p>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-blue-500/10 border border-blue-500/30 mb-4 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
+              <LayoutDashboard className="size-4 text-blue-400" />
+              <span className="text-xs uppercase tracking-widest text-blue-400 font-bold">
+                Facility Partner
+              </span>
+            </div>
+            <h1 className="font-display text-5xl md:text-6xl tracking-wider text-white">
+              OWNER <span className="text-blue-400">DASHBOARD</span>
+            </h1>
+            <p className="text-muted-foreground mt-3 max-w-2xl text-lg">
+              Manage your Butuan City venues, optimize your hours, configure pricing, and analyze your revenue.
+            </p>
           </div>
-          <Button size="lg" onClick={() => setEditing({ ...emptyForm })} className="font-bold tracking-wider">
-            <Plus className="size-5" /> New facility
+          <Button size="lg" onClick={() => setEditing({ ...emptyForm })} className="font-bold tracking-wider bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)] border-none">
+            <Plus className="size-5 mr-2" /> New facility
           </Button>
         </div>
 
@@ -457,7 +479,6 @@ export default function OwnerDashboard() {
           </DialogContent>
         </Dialog>
       </main>
-      <Footer />
     </div>
   );
 }

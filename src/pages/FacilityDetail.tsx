@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Navigate } from "react-router-dom";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRoles } from "@/hooks/useRole";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ interface Facility {
 }
 
 export default function FacilityDetail() {
+  const { isAdmin, isOwner, loading: rolesLoading } = useRoles();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -40,6 +42,10 @@ export default function FacilityDetail() {
   const [pendingAmount, setPendingAmount] = useState(0);
   const [payOpen, setPayOpen] = useState(false);
   const [seriesOpen, setSeriesOpen] = useState(false);
+
+  // Strict Role-Based Access Control
+  if (!rolesLoading && isAdmin) return <Navigate to="/admin/users" replace />;
+  if (!rolesLoading && !isAdmin && isOwner) return <Navigate to="/owner" replace />;
 
   useEffect(() => {
     if (!id) return;
