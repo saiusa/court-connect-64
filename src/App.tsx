@@ -34,6 +34,8 @@ const App = () => (
             <Route path="/owner" element={<OwnerDashboard />} />
             <Route path="/reminders" element={<ReminderSettings />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/partners" element={<AdminPartners />} />
+            <Route path="/partner" element={<PartnerOnboarding />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
