@@ -12,6 +12,8 @@ import MyBookings from "./pages/MyBookings.tsx";
 import OwnerDashboard from "./pages/OwnerDashboard.tsx";
 import ReminderSettings from "./pages/ReminderSettings.tsx";
 import AdminUsers from "./pages/AdminUsers.tsx";
+import AdminPartners from "./pages/AdminPartners.tsx";
+import PartnerOnboarding from "./pages/PartnerOnboarding.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -32,6 +34,8 @@ const App = () => (
             <Route path="/owner" element={<OwnerDashboard />} />
             <Route path="/reminders" element={<ReminderSettings />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/partners" element={<AdminPartners />} />
+            <Route path="/partner" element={<PartnerOnboarding />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
