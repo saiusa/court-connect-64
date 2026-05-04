@@ -20,6 +20,7 @@ import {
   Home,
   Building2,
   ShieldCheck,
+  Handshake,
 } from "lucide-react";
 import courtsideLogo from "@/assets/courtside-logo.png";
 
