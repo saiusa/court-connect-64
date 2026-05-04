@@ -12,6 +12,8 @@ import MyBookings from "./pages/MyBookings.tsx";
 import OwnerDashboard from "./pages/OwnerDashboard.tsx";
 import ReminderSettings from "./pages/ReminderSettings.tsx";
 import AdminUsers from "./pages/AdminUsers.tsx";
+import AdminPartners from "./pages/AdminPartners.tsx";
+import PartnerOnboarding from "./pages/PartnerOnboarding.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
